@@ -1385,7 +1385,7 @@ bool tox_conference_peer_number_is_ours(const Tox *tox, uint32_t conference_numb
                                         TOX_ERR_CONFERENCE_PEER_QUERY *error)
 {
     const Messenger *m = tox;
-    int ret = group_peernumber_is_ours((Group_Chats *)m->conferences_object, conference_number, peer_number);
+    int ret = group_peer_index_is_ours((Group_Chats *)m->conferences_object, conference_number, peer_number);
 
     switch (ret) {
         case -1:
@@ -1589,8 +1589,7 @@ TOX_CONFERENCE_TYPE tox_conference_get_type(const Tox *tox, uint32_t conference_
 bool tox_conference_get_uid(Tox *tox, uint32_t conference_number, uint8_t *uid /* TOX_CONFERENCE_ID_SIZE bytes */)
 {
     const Messenger *m = tox;
-    int ret = conference_get_id((Group_Chats *)m->conferences_object, conference_number, uid);
-    return ret >= 0;
+    return conference_get_id((Group_Chats *)m->conferences_object, conference_number, uid);
 }
 
 uint32_t tox_conference_by_uid(const Tox *tox, const uint8_t *uid, TOX_ERR_CONFERENCE_BY_UID *error)

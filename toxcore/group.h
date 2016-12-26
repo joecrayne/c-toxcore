@@ -98,7 +98,7 @@ typedef struct {
     uint16_t closest_peers[DESIRED_CLOSE_CONNECTIONS];
 
     void (*peer_on_join)(void *, int, int);
-    void (*peer_on_leave)(void *, int, void *);
+    void (*peer_on_leave)(void *, int32_t, void *);
     void (*group_on_delete)(void *, int);
 
     uint8_t identifier[GROUP_IDENTIFIER_LENGTH];
@@ -211,31 +211,31 @@ int del_groupchat(Group_Chats *g_c, int groupnumber);
 int enter_conference(Group_Chats *g_c, int groupnumber);
 int leave_conference(Group_Chats *g_c, int groupnumber, bool keep_leave);
 
-/* Copy the public key of peernumber who is in groupnumber to pk.
+/* Copy the public key of peer_index who is in groupnumber to pk.
  * pk must be crypto_box_PUBLICKEYBYTES long.
  *
  * return 0 on success
  * return -1 if groupnumber is invalid.
- * return -2 if peernumber is invalid.
+ * return -2 if peer_index is invalid.
  */
-int group_peer_pubkey(const Group_Chats *g_c, int groupnumber, int peernumber, uint8_t *pk);
+int group_peer_pubkey(const Group_Chats *g_c, int groupnumber, int peer_index, uint8_t *pk);
 
 /*
- * Return the size of peernumber's name.
+ * Return the size of peer_index's name.
  *
  * return -1 if groupnumber is invalid.
- * return -2 if peernumber is invalid.
+ * return -2 if peer_index is invalid.
  */
-int group_peername_size(const Group_Chats *g_c, int groupnumber, int peernumber);
+int group_peername_size(const Group_Chats *g_c, int groupnumber, int peer_index);
 
-/* Copy the name of peernumber who is in groupnumber to name.
+/* Copy the name of peer_index who is in groupnumber to name.
  * name must be at least MAX_NAME_LENGTH long.
  *
  * return length of name if success
  * return -1 if groupnumber is invalid.
- * return -2 if peernumber is invalid.
+ * return -2 if peer_index is invalid.
  */
-int group_peername(const Group_Chats *g_c, int groupnumber, int peernumber, uint8_t *name);
+int group_peername(const Group_Chats *g_c, int groupnumber, int peer_index, uint8_t *name);
 
 /* invite friendnumber to groupnumber
  *
@@ -300,13 +300,13 @@ int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title);
  */
 int group_number_peers(const Group_Chats *g_c, int groupnumber);
 
-/* return 1 if the peernumber corresponds to ours.
- * return 0 if the peernumber is not ours.
+/* return 1 if the peer_index corresponds to ours.
+ * return 0 if the peer_index is not ours.
  * return -1 if groupnumber is invalid.
- * return -2 if peernumber is invalid.
+ * return -2 if peer_index is invalid.
  * return -3 if we are not connected to the group chat.
  */
-int group_peernumber_is_ours(const Group_Chats *g_c, int groupnumber, int peernumber);
+int group_peer_index_is_ours(const Group_Chats *g_c, int groupnumber, int peer_index);
 
 /* List all the peers in the group chat.
  *
@@ -357,12 +357,12 @@ uint32_t copy_chatlist(Group_Chats *g_c, uint32_t *out_list, uint32_t list_size)
  */
 int group_get_type(const Group_Chats *g_c, int groupnumber);
 
-/* return the unique id of conference that groupnumber is.
+/* Copies the unique id of group_chat[groupnumber] into uid.
 *
-* return -1 on failure.
-* return type on success.
+* return false on failure.
+* return true on success.
 */
-int conference_get_id(const Group_Chats *g_c, int groupnumber, uint8_t *uid);
+bool conference_get_id(const Group_Chats *g_c, int groupnumber, uint8_t *uid);
 
 int conference_by_uid(const Group_Chats *g_c, const uint8_t *uid);
 
