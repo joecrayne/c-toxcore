@@ -5,8 +5,8 @@ include(CTest)
 # This version is for the entire project. All libraries (core, av, ...) move in
 # versions in a synchronised way.
 set(PROJECT_VERSION_MAJOR "0")
-set(PROJECT_VERSION_MINOR "0")
-set(PROJECT_VERSION_PATCH "5")
+set(PROJECT_VERSION_MINOR "1")
+set(PROJECT_VERSION_PATCH "2")
 set(PROJECT_VERSION
   "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
@@ -223,7 +223,7 @@ target_link_modules(toxnetwork toxcrypto)
 
 if(CMAKE_THREAD_LIBS_INIT)
   target_link_modules(toxnetwork ${CMAKE_THREAD_LIBS_INIT})
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-l${CMAKE_THREAD_LIBS_INIT}")
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
 if(RT_LIBRARIES)
@@ -299,6 +299,7 @@ apidsl(
   toxcore/tox.api.h)
 add_module(toxcore
   toxcore/misc_tools.h
+  toxcore/tox_api.c
   toxcore/tox.c
   toxcore/tox.h)
 target_link_modules(toxcore toxgroup)
@@ -343,8 +344,11 @@ add_module(toxdns
   toxdns/toxdns.c)
 target_link_modules(toxdns toxcore)
 
+apidsl(
+  toxencryptsave/toxencryptsave.api.h)
 add_module(toxencryptsave
-  toxencryptsave/toxencryptsave.c)
+  toxencryptsave/toxencryptsave.c
+  toxencryptsave/toxencryptsave.h)
 target_link_modules(toxencryptsave toxcore)
 
 ################################################################################
@@ -417,11 +421,15 @@ auto_test(encryptsave)
 auto_test(messenger)
 auto_test(network)
 auto_test(onion)
+auto_test(resource_leak)
+auto_test(save_friend)
 auto_test(skeleton)
 auto_test(tox)
 auto_test(tox_many)
 auto_test(tox_many_tcp)
 auto_test(tox_one)
+auto_test(version)
+
 if(BUILD_TOXAV)
   auto_test(toxav_basic)
   auto_test(toxav_many)
@@ -519,6 +527,8 @@ endif()
 #
 ################################################################################
 
+string(REPLACE ";" " " toxcore_PKGCONFIG_LIBS "${toxcore_PKGCONFIG_LIBS}")
+
 if(BUILD_TOXAV)
   configure_file(
     "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxav.pc.in"
@@ -545,7 +555,20 @@ configure_file(
   @ONLY
 )
 
+configure_file(
+  "${CMAKE_SOURCE_DIR}/other/pkgconfig/libtoxcore.pc.in"
+  "${CMAKE_BINARY_DIR}/libtoxcore.pc"
+  @ONLY
+)
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/other/pkgconfig/libtoxav.pc.in"
+  "${CMAKE_BINARY_DIR}/libtoxav.pc"
+  @ONLY
+)
+
 install(FILES
+  ${CMAKE_BINARY_DIR}/libtoxcore.pc
   ${CMAKE_BINARY_DIR}/toxcore.pc
   ${CMAKE_BINARY_DIR}/toxdns.pc
   ${CMAKE_BINARY_DIR}/toxencryptsave.pc
@@ -558,6 +581,7 @@ install(FILES
 
 if(BUILD_TOXAV)
   install(FILES
+    ${CMAKE_BINARY_DIR}/libtoxav.pc
     ${CMAKE_BINARY_DIR}/toxav.pc
     DESTINATION "lib/pkgconfig")
   install(FILES

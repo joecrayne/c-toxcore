@@ -19,7 +19,8 @@
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+#include <windows.h>
 #define c_sleep(x) Sleep(1*x)
 #else
 #include <pthread.h>
@@ -202,6 +203,7 @@ START_TEST(test_AV_three_calls)
     uint32_t index[] = { 1, 2, 3, 4, 5 };
     Tox *Alice, *bootstrap, *Bobs[3];
     ToxAV *AliceAV, *BobsAV[3];
+    void *retval;
 
     CallControl AliceCC[3], BobsCC[3];
 
@@ -300,10 +302,6 @@ START_TEST(test_AV_three_calls)
     (void) pthread_create(tids + 1, NULL, call_thread, tds + 1);
     (void) pthread_create(tids + 2, NULL, call_thread, tds + 2);
 
-    (void) pthread_detach(tids[0]);
-    (void) pthread_detach(tids[1]);
-    (void) pthread_detach(tids[2]);
-
     time_t start_time = time(NULL);
 
     while (time(NULL) - start_time < 5) {
@@ -314,9 +312,14 @@ START_TEST(test_AV_three_calls)
         c_sleep(20);
     }
 
-    (void) pthread_join(tids[0], NULL);
-    (void) pthread_join(tids[1], NULL);
-    (void) pthread_join(tids[2], NULL);
+    ck_assert(pthread_join(tids[0], &retval) == 0);
+    ck_assert(retval == NULL);
+
+    ck_assert(pthread_join(tids[1], &retval) == 0);
+    ck_assert(retval == NULL);
+
+    ck_assert(pthread_join(tids[2], &retval) == 0);
+    ck_assert(retval == NULL);
 
     printf("Killing all instances\n");
     toxav_kill(BobsAV[0]);

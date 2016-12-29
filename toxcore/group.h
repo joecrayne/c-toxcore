@@ -42,8 +42,8 @@ typedef struct {
 } Group_Peer_Lossy;
 
 typedef struct {
-    uint8_t     real_pk[crypto_box_PUBLICKEYBYTES];
-    uint8_t     temp_pk[crypto_box_PUBLICKEYBYTES];
+    uint8_t     real_pk[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t     temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
 
     Group_Peer_Lossy *lossy; /* rare use */
     void *object;
@@ -69,14 +69,14 @@ typedef struct {
 
 typedef struct {
     uint64_t    next_try_time;
-    uint8_t     real_pk[crypto_box_PUBLICKEYBYTES];
+    uint8_t     real_pk[CRYPTO_PUBLIC_KEY_SIZE];
     int8_t      fails;
     unsigned    online : 1;
     unsigned    unsubscribed : 1;
 } Group_Join_Peer;
 
 #define DESIRED_CLOSE_CONNECTIONS 4
-#define GROUP_IDENTIFIER_LENGTH (1 + crypto_box_KEYBYTES) /* type + crypto_box_KEYBYTES so we can use new_symmetric_key(...) to fill it */
+#define GROUP_IDENTIFIER_LENGTH (1 + CRYPTO_SYMMETRIC_KEY_SIZE) /* type + CRYPTO_SYMMETRIC_KEY_SIZE so we can use new_symmetric_key(...) to fill it */
 
 typedef struct {
     Group_Peer *peers;
@@ -93,7 +93,7 @@ typedef struct {
     uint64_t next_join_check_time;
     uint64_t last_close_check_time;
 
-    uint8_t real_pk[crypto_box_PUBLICKEYBYTES];
+    uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t title[MAX_NAME_LENGTH];
     uint16_t closest_peers[DESIRED_CLOSE_CONNECTIONS];
 
@@ -103,7 +103,8 @@ typedef struct {
 
     uint8_t identifier[GROUP_IDENTIFIER_LENGTH];
 
-    unsigned closest_peers_entry : DESIRED_CLOSE_CONNECTIONS;
+unsigned closest_peers_entry :
+    DESIRED_CLOSE_CONNECTIONS;
     unsigned live : 1;
     unsigned join_mode : 1;
     unsigned fake_join : 1;
@@ -212,7 +213,7 @@ int enter_conference(Group_Chats *g_c, int groupnumber);
 int leave_conference(Group_Chats *g_c, int groupnumber, bool keep_leave);
 
 /* Copy the public key of peer_index who is in groupnumber to pk.
- * pk must be crypto_box_PUBLICKEYBYTES long.
+ * pk must be CRYPTO_PUBLIC_KEY_SIZE long.
  *
  * return 0 on success
  * return -1 if groupnumber is invalid.
