@@ -2356,7 +2356,7 @@ static void send_peers(Group_Chats *g_c, int32_t groupnumber, int friendcon_id, 
 
     if (sent != i) {
         send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, other_group_num, packet,
-                               p - packet));
+                               p - packet);
     }
 
     if (g->title_len) {
