@@ -6,11 +6,11 @@ include(CTest)
 # versions in a synchronised way.
 set(PROJECT_VERSION_MAJOR "0")
 set(PROJECT_VERSION_MINOR "1")
-set(PROJECT_VERSION_PATCH "2")
+set(PROJECT_VERSION_PATCH "3")
 set(PROJECT_VERSION
   "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${toxcore_SOURCE_DIR}/cmake)
 
 ################################################################################
 #
@@ -56,21 +56,20 @@ macro(add_flag flag)
   add_cflag(${flag})
   add_cxxflag(${flag})
 endmacro()
+  
+# Set standard version for compiler.
+add_cflag("-std=c99")
+add_cxxflag("-std=c++11")
+
+# Warn on non-ISO C.
+add_cflag("-pedantic")
 
 option(WARNINGS "Enable additional compiler warnings" ON)
 if(WARNINGS)
-  # Set standard version for compiler.
-  add_cflag("-std=gnu99")
-  add_cxxflag("-std=c++98")
-
   # Add all warning flags we can.
   add_flag("-Wall")
   add_flag("-Wextra")
   add_flag("-Weverything")
-
-  # -pedantic only for C, because in C++ we want to allow the GNU/C99 extension
-  # of having a comma at the end of an enumerator list.
-  add_cflag("-pedantic")
 
   # Disable specific warning flags for both C and C++.
   add_flag("-Wno-cast-align")
@@ -204,7 +203,11 @@ apidsl(
   toxcore/crypto_core.api.h)
 add_module(toxcrypto
   toxcore/crypto_core.c
-  toxcore/crypto_core.h)
+  toxcore/crypto_core.h
+  toxcore/crypto_core_mem.c)
+include(CheckFunctionExists)
+check_function_exists(explicit_bzero HAVE_EXPLICIT_BZERO)
+check_function_exists(memset_s HAVE_MEMSET_S)
 target_link_modules(toxcrypto ${LIBSODIUM_LIBRARIES})
 if(WIN32)
   target_link_modules(toxcrypto ws2_32) # for htonl
@@ -298,7 +301,6 @@ target_link_modules(toxgroup toxmessenger)
 apidsl(
   toxcore/tox.api.h)
 add_module(toxcore
-  toxcore/misc_tools.h
   toxcore/tox_api.c
   toxcore/tox.c
   toxcore/tox.h)
@@ -357,9 +359,7 @@ target_link_modules(toxencryptsave toxcore)
 #
 ################################################################################
 
-find_program(SPECTEST NAMES
-  tox-spectest
-  ${CMAKE_SOURCE_DIR}/../.cabal-sandbox/bin/tox-spectest)
+find_program(SPECTEST NAMES tox-spectest)
 
 if(SPECTEST AND MSGPACK_FOUND)
   add_c_executable(toxcore-sut
@@ -389,8 +389,8 @@ option(FORMAT_TEST "Require the format_test to be executed; fail cmake if it can
 if(APIDSL AND ASTYLE)
   add_test(
     NAME format_test
-    COMMAND ${CMAKE_SOURCE_DIR}/other/astyle/format-source
-      "${CMAKE_SOURCE_DIR}"
+    COMMAND ${toxcore_SOURCE_DIR}/other/astyle/format-source
+      "${toxcore_SOURCE_DIR}"
       "${APIDSL}"
       "${ASTYLE}")
   set_tests_properties(format_test PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
@@ -531,38 +531,38 @@ string(REPLACE ";" " " toxcore_PKGCONFIG_LIBS "${toxcore_PKGCONFIG_LIBS}")
 
 if(BUILD_TOXAV)
   configure_file(
-    "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxav.pc.in"
+    "${toxcore_SOURCE_DIR}/other/pkgconfig/toxav.pc.in"
     "${CMAKE_BINARY_DIR}/toxav.pc"
     @ONLY
   )
 endif()
 
 configure_file(
-  "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxcore.pc.in"
+  "${toxcore_SOURCE_DIR}/other/pkgconfig/toxcore.pc.in"
   "${CMAKE_BINARY_DIR}/toxcore.pc"
   @ONLY
 )
 
 configure_file(
-  "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxdns.pc.in"
+  "${toxcore_SOURCE_DIR}/other/pkgconfig/toxdns.pc.in"
   "${CMAKE_BINARY_DIR}/toxdns.pc"
   @ONLY
 )
 
 configure_file(
-  "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxencryptsave.pc.in"
+  "${toxcore_SOURCE_DIR}/other/pkgconfig/toxencryptsave.pc.in"
   "${CMAKE_BINARY_DIR}/toxencryptsave.pc"
   @ONLY
 )
 
 configure_file(
-  "${CMAKE_SOURCE_DIR}/other/pkgconfig/libtoxcore.pc.in"
+  "${toxcore_SOURCE_DIR}/other/pkgconfig/libtoxcore.pc.in"
   "${CMAKE_BINARY_DIR}/libtoxcore.pc"
   @ONLY
 )
 
 configure_file(
-  "${CMAKE_SOURCE_DIR}/other/pkgconfig/libtoxav.pc.in"
+  "${toxcore_SOURCE_DIR}/other/pkgconfig/libtoxav.pc.in"
   "${CMAKE_BINARY_DIR}/libtoxav.pc"
   @ONLY
 )
@@ -595,12 +595,12 @@ endif()
 #
 ################################################################################
 
-find_program(SH NAMES sh dash bash zsh)
+find_program(SHELL NAMES sh dash bash zsh)
 
-if(SH)
+if(SHELL)
   execute_process(
-    COMMAND ${SH} ${CMAKE_SOURCE_DIR}/other/version-sync
-      ${CMAKE_SOURCE_DIR}
+    COMMAND ${SHELL} ${toxcore_SOURCE_DIR}/other/version-sync
+      ${toxcore_SOURCE_DIR}
       ${PROJECT_VERSION_MAJOR}
       ${PROJECT_VERSION_MINOR}
       ${PROJECT_VERSION_PATCH})
@@ -610,11 +610,16 @@ endif()
 #
 # :: Strict ABI
 #
+# Enabling the STRICT_ABI flag will generate and use an LD version script.
+# It ensures that the dynamic libraries (libtoxcore.so, libtoxav.so) only
+# export the symbols that are defined in their public API (tox.h and toxav.h,
+# respectively).
+#
 ################################################################################
 
 function(make_version_script header ns lib)
   execute_process(
-    COMMAND ${SH} -c "egrep '^\\w' ${header} | grep '${ns}_[a-z0-9_]*(' | grep -v '^typedef' | grep -o '${ns}_[a-z0-9_]*(' | egrep -o '\\w+' | sort -u"
+    COMMAND ${SHELL} -c "egrep '^\\w' ${header} | grep '${ns}_[a-z0-9_]*(' | grep -v '^typedef' | grep -o '${ns}_[a-z0-9_]*(' | egrep -o '\\w+' | sort -u"
     OUTPUT_VARIABLE ${lib}_SYMS
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   string(REPLACE "\n" ";" ${lib}_SYMS ${${lib}_SYMS})
@@ -640,9 +645,9 @@ if(WIN32 OR APPLE)
   set(STRICT_ABI OFF)
 endif()
 
-if(STRICT_ABI AND SH)
+if(STRICT_ABI AND SHELL AND ENABLE_SHARED)
   if(BUILD_TOXAV)
-    make_version_script(${CMAKE_SOURCE_DIR}/toxav/toxav.h toxav toxav)
+    make_version_script(${toxcore_SOURCE_DIR}/toxav/toxav.h toxav toxav)
   endif()
-  make_version_script(${CMAKE_SOURCE_DIR}/toxcore/tox.h tox toxcore)
+  make_version_script(${toxcore_SOURCE_DIR}/toxcore/tox.h tox toxcore)
 endif()
