@@ -501,7 +501,7 @@ add_c_executable(DHT_test testing/DHT_test.c)
 target_link_modules(DHT_test toxdht)
 
 add_c_executable(Messenger_test testing/Messenger_test.c)
-target_link_modules(Messenger_test toxmessenger)
+target_link_modules(Messenger_test toxmessenger toxgroup)
 
 add_c_executable(dns3_test testing/dns3_test.c)
 target_link_modules(dns3_test toxdns)
