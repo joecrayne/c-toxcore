@@ -35,10 +35,8 @@ enum {
 #define MAX_LOSSY_COUNT 256
 
 typedef struct {
-
     uint8_t     recv_lossy[MAX_LOSSY_COUNT];
     uint16_t    bottom_lossy_number, top_lossy_number;
-
 } Group_Peer_Lossy;
 
 typedef struct {
@@ -103,8 +101,7 @@ typedef struct {
 
     uint8_t identifier[GROUP_IDENTIFIER_LENGTH];
 
-unsigned closest_peers_entry :
-    DESIRED_CLOSE_CONNECTIONS;
+    unsigned closest_peers_entry : DESIRED_CLOSE_CONNECTIONS;
     unsigned live : 1;
     unsigned join_mode : 1;
     unsigned fake_join : 1;
@@ -122,7 +119,6 @@ unsigned closest_peers_entry :
     unsigned keep_leave : 1;
     unsigned disable_auto_join : 1;
     unsigned nick_changed : 1;
-
 } Group_c;
 
 typedef struct {
@@ -342,14 +338,14 @@ int send_group_lossy_packet(const Group_Chats *g_c, int groupnumber, const uint8
  * You should use this to determine how much memory to allocate
  * for copy_chatlist.
  */
-uint32_t count_chatlist(Group_Chats *g_c);
+uint32_t count_chatlist(const Group_Chats *g_c);
 
 /* Copy a list of valid chat IDs into the array out_list.
  * If out_list is NULL, returns 0.
  * Otherwise, returns the number of elements copied.
  * If the array was too small, the contents
  * of out_list will be truncated to list_size. */
-uint32_t copy_chatlist(Group_Chats *g_c, uint32_t *out_list, uint32_t list_size);
+uint32_t copy_chatlist(const Group_Chats *g_c, uint32_t *out_list, uint32_t list_size);
 
 /* return the type of groupchat (GROUPCHAT_TYPE_) that groupnumber is.
  *
