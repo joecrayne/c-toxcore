@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([tox], [0.1.3])
+AC_INIT([tox], [0.1.4])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([toxcore/net_crypto.c])
 AC_CONFIG_HEADERS([config.h])
@@ -11,16 +11,6 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CONFIG_MACRO_DIR([m4])
 
 EXTRA_LT_LDFLAGS=
-
-LIBTOXCORE_LT_VERSION=0:0:0
-dnl
-dnl            current:revision:age
-dnl
-dnl current:  increment if interfaces have been added, removed or changed
-dnl revision: increment if source code has changed, set to zero if current is
-dnl           incremented
-dnl age:      increment if interfaces have been added, set to zero if
-dnl           interfaces have been removed or changed
 
 if test "x${prefix}" = "xNONE"; then
     prefix="${ac_default_prefix}"
@@ -34,29 +24,25 @@ BUILD_AV="yes"
 BUILD_TESTING="yes"
 
 TOX_LOGGER="no"
-TOX_DEBUG="no"
 
 NCURSES_FOUND="no"
 LIBCONFIG_FOUND="no"
 LIBCHECK_FOUND="no"
 WANT_NACL="no"
 ADD_NACL_OBJECTS_TO_PKGCONFIG="yes"
-
-TOXCORE_LT_LDFLAGS="-version-info $LIBTOXCORE_LT_VERSION"
-TOXAV_LT_LDFLAGS="-version-info $LIBTOXCORE_LT_VERSION"
+SET_SO_VERSION="yes"
 
 AC_ARG_ENABLE([soname-versions],
     [AC_HELP_STRING([--enable-soname-versions], [enable soname versions (must be disabled for android) (default: enabled)]) ],
     [
         if test "x$enableval" = "xno"; then
-            TOXCORE_LT_LDFLAGS="-avoid-version"
-            TOXAV_LT_LDFLAGS="-avoid-version"
+            SET_SO_VERSION="no"
+        elif test "x$enableval" = "xyes"; then
+            SET_SO_VERSION="yes"
         fi
     ]
 )
-
-AC_SUBST(TOXCORE_LT_LDFLAGS)
-AC_SUBST(TOXAV_LT_LDFLAGS)
+AM_CONDITIONAL(SET_SO_VERSION, test "x$SET_SO_VERSION" = "xyes")
 
 AC_ARG_ENABLE([nacl],
     [AC_HELP_STRING([--enable-nacl], [use nacl instead of libsodium (default: disabled)]) ],
@@ -89,17 +75,6 @@ AC_ARG_ENABLE([logging],
             TOX_LOGGER="yes"
 
             AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
-        fi
-    ]
-)
-
-AC_ARG_ENABLE([debug],
-    [AC_HELP_STRING([--enable-debug], [enable debugging (default: disabled)]) ],
-    [
-        if test "x$enableval" = "xyes"; then
-            TOX_DEBUG="yes"
-
-            AC_DEFINE([TOX_DEBUG], [], [If debugging enabled])
         fi
     ]
 )
@@ -295,7 +270,12 @@ if test "x$WANT_NACL" = "xyes"; then
 fi
 
 # Checks for programs.
-AC_PROG_CC
+AC_PROG_CC_C99
+
+if test "x$ac_cv_prog_cc_c99" = "xno" ; then
+    AC_MSG_ERROR([c-toxcore requires a C99 compatible compiler])
+fi
+
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_LIBTOOL_WIN32_DLL

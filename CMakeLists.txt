@@ -2,15 +2,34 @@ cmake_minimum_required(VERSION 2.8.6)
 project(toxcore)
 include(CTest)
 
+set(CMAKE_MODULE_PATH ${toxcore_SOURCE_DIR}/cmake)
+
+################################################################################
+#
+# :: Version management
+#
+################################################################################
+
 # This version is for the entire project. All libraries (core, av, ...) move in
 # versions in a synchronised way.
 set(PROJECT_VERSION_MAJOR "0")
 set(PROJECT_VERSION_MINOR "1")
-set(PROJECT_VERSION_PATCH "3")
-set(PROJECT_VERSION
-  "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
+set(PROJECT_VERSION_PATCH "4")
+set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
-set(CMAKE_MODULE_PATH ${toxcore_SOURCE_DIR}/cmake)
+# set .so library version / following libtool scheme
+# https://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
+file(STRINGS ${toxcore_SOURCE_DIR}/so.version SOVERSION_CURRENT REGEX "^CURRENT=[0-9]+$")
+string(SUBSTRING "${SOVERSION_CURRENT}" 8 -1 SOVERSION_CURRENT)
+file(STRINGS ${toxcore_SOURCE_DIR}/so.version SOVERSION_REVISION REGEX "^REVISION=[0-9]+$")
+string(SUBSTRING "${SOVERSION_REVISION}" 9 -1 SOVERSION_REVISION)
+file(STRINGS ${toxcore_SOURCE_DIR}/so.version SOVERSION_AGE REGEX "^AGE=[0-9]+$")
+string(SUBSTRING "${SOVERSION_AGE}" 4 -1 SOVERSION_AGE)
+# account for some libtool magic, see other/version-sync script for details
+math(EXPR SOVERSION_MAJOR ${SOVERSION_CURRENT}-${SOVERSION_AGE})
+set(SOVERSION "${SOVERSION_MAJOR}.${SOVERSION_AGE}.${SOVERSION_REVISION}")
+message("SOVERSION: ${SOVERSION}")
+
 
 ################################################################################
 #
@@ -127,7 +146,6 @@ endif()
 option(DEBUG "Enable assertions and other debugging facilities" OFF)
 if(DEBUG)
   set(MIN_LOGGER_LEVEL DEBUG)
-  add_definitions(-DTOX_DEBUG=1)
   add_cflag("-g3")
 endif()
 
@@ -441,10 +459,13 @@ endif()
 #
 ################################################################################
 
-add_c_executable(DHT_bootstrap
-  other/DHT_bootstrap.c
-  other/bootstrap_node_packets.c)
-target_link_modules(DHT_bootstrap toxnetcrypto)
+option(DHT_BOOTSTRAP "Enable building of DHT_bootstrap" ON)
+if(DHT_BOOTSTRAP)
+  add_c_executable(DHT_bootstrap
+    other/DHT_bootstrap.c
+    other/bootstrap_node_packets.c)
+  target_link_modules(DHT_bootstrap toxnetcrypto)
+endif()
 
 option(BOOTSTRAP_DAEMON "Enable building of tox-bootstrapd" ON)
 if(BOOTSTRAP_DAEMON)
@@ -587,23 +608,6 @@ if(BUILD_TOXAV)
   install(FILES
     toxav/toxav.h
     DESTINATION "include/tox")
-endif()
-
-################################################################################
-#
-# :: Update versions in various places
-#
-################################################################################
-
-find_program(SHELL NAMES sh dash bash zsh)
-
-if(SHELL)
-  execute_process(
-    COMMAND ${SHELL} ${toxcore_SOURCE_DIR}/other/version-sync
-      ${toxcore_SOURCE_DIR}
-      ${PROJECT_VERSION_MAJOR}
-      ${PROJECT_VERSION_MINOR}
-      ${PROJECT_VERSION_PATCH})
 endif()
 
 ################################################################################

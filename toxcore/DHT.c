@@ -553,7 +553,7 @@ static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t le
                 list[i].assoc4.timestamp = temp_time;
             } else if (ip_port.ip.family == AF_INET6) {
 
-                if (!ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
+                if (!ipport_equal(&list[i].assoc6.ip_port, &ip_port)) {
                     LOGGER_TRACE(log, "coipil[%u]: switching ipv6 from %s:%u to %s:%u", i,
                                  ip_ntoa(&list[i].assoc6.ip_port.ip), ntohs(list[i].assoc6.ip_port.port),
                                  ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
@@ -2813,13 +2813,10 @@ static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t le
 
             break;
 
-#ifdef TOX_DEBUG
-
         default:
-            fprintf(stderr, "Load state (DHT): contains unrecognized part (len %u, type %u)\n",
-                    length, type);
+            LOGGER_ERROR(dht->log, "Load state (DHT): contains unrecognized part (len %u, type %u)\n",
+                         length, type);
             break;
-#endif
     }
 
     return 0;
@@ -2839,7 +2836,7 @@ int DHT_load(DHT *dht, const uint8_t *data, uint32_t length)
         lendian_to_host32(&data32, data);
 
         if (data32 == DHT_STATE_COOKIE_GLOBAL) {
-            return load_state(dht_load_state_callback, dht, data + cookie_len,
+            return load_state(dht_load_state_callback, dht->log, dht, data + cookie_len,
                               length - cookie_len, DHT_STATE_COOKIE_TYPE);
         }
     }
