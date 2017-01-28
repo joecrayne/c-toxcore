@@ -1,26 +1,26 @@
-/* network.h
- *
+/*
  * Datatypes, functions and includes for the core networking.
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifndef NETWORK_H
 #define NETWORK_H
 
@@ -30,6 +30,7 @@
 #include <libc.h>
 #endif
 
+#include "ccompat.h"
 #include "logger.h"
 
 #include <stdint.h>
@@ -52,53 +53,21 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-#ifndef IPV6_V6ONLY
-#define IPV6_V6ONLY 27
-#endif
-
-typedef unsigned int sock_t;
 /* sa_family_t is the sockaddr_in / sockaddr_in6 family field */
 typedef short sa_family_t;
-
-#ifndef EWOULDBLOCK
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#endif
 
 #else // Linux includes
 
 #include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
 #include <netdb.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <unistd.h>
 
-typedef int sock_t;
-
 #endif
 
-#if defined(__AIX__)
-#   define _XOPEN_SOURCE 1
-#endif
+struct in_addr;
+struct in6_addr;
 
-#if defined(__sun__)
-#define __EXTENSIONS__ 1 // SunOS!
-#if defined(__SunOS5_6__) || defined(__SunOS5_7__) || defined(__SunOS5_8__) || defined(__SunOS5_9__) || defined(__SunOS5_10__)
-//Nothing needed
-#else
-#define __MAKECONTEXT_V2_SOURCE 1
-#endif
-#endif
-
-#ifndef IPV6_ADD_MEMBERSHIP
-#ifdef  IPV6_JOIN_GROUP
-#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
-#define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
-#endif
-#endif
+typedef int Socket;
 
 #define MAX_UDP_PACKET_SIZE 2048
 
@@ -148,7 +117,6 @@ typedef union {
     uint8_t uint8[4];
     uint16_t uint16[2];
     uint32_t uint32;
-    struct in_addr in_addr;
 }
 IP4;
 
@@ -157,13 +125,12 @@ typedef union {
     uint16_t uint16[8];
     uint32_t uint32[4];
     uint64_t uint64[2];
-    struct in6_addr in6_addr;
 }
 IP6;
 
 typedef struct {
     uint8_t family;
-    __extension__ union {
+    GNU_EXTENSION union {
         IP4 ip4;
         IP6 ip6;
     };
@@ -175,6 +142,14 @@ typedef struct {
     uint16_t port;
 }
 IP_Port;
+
+/* Convert in_addr to IP */
+void get_ip4(IP4 *ip, const struct in_addr *addr);
+void get_ip6(IP6 *ip, const struct in6_addr *addr);
+
+/* Conevrt IP to in_addr */
+void fill_addr4(IP4 ip, struct in_addr *addr);
+void fill_addr6(IP6 ip, struct in6_addr *addr);
 
 /* Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
 #define IPV6_IPV4_IN_V6(a) ((a.uint64[0] == 0) && (a.uint32[2] == htonl (0xffff)))
@@ -193,12 +168,16 @@ IP_Port;
 
 /* ip_ntoa
  *   converts ip into a string
- *   uses a static buffer, so mustn't used multiple times in the same output
+ *   ip_str must be of length at least IP_NTOA_LEN
  *
  *   IPv6 addresses are enclosed into square brackets, i.e. "[IPv6]"
  *   writes error message into the buffer on error
+ *
+ *   returns ip_str
  */
-const char *ip_ntoa(const IP *ip);
+/* this would be INET6_ADDRSTRLEN, but it might be too short for the error message */
+#define IP_NTOA_LEN 96 // TODO(irungentoo): magic number. Why not INET6_ADDRSTRLEN ?
+const char *ip_ntoa(const IP *ip, char *ip_str, size_t length);
 
 /*
  * ip_parse_addr
@@ -316,7 +295,7 @@ typedef struct {
     sa_family_t family;
     uint16_t port;
     /* Our UDP socket. */
-    sock_t sock;
+    Socket sock;
 } Networking_Core;
 
 /* Run this before creating sockets.
@@ -331,39 +310,39 @@ int networking_at_startup(void);
  * return 1 if valid
  * return 0 if not valid
  */
-int sock_valid(sock_t sock);
+int sock_valid(Socket sock);
 
 /* Close the socket.
  */
-void kill_sock(sock_t sock);
+void kill_sock(Socket sock);
 
 /* Set socket as nonblocking
  *
  * return 1 on success
  * return 0 on failure
  */
-int set_socket_nonblock(sock_t sock);
+int set_socket_nonblock(Socket sock);
 
 /* Set socket to not emit SIGPIPE
  *
  * return 1 on success
  * return 0 on failure
  */
-int set_socket_nosigpipe(sock_t sock);
+int set_socket_nosigpipe(Socket sock);
 
 /* Enable SO_REUSEADDR on socket.
  *
  * return 1 on success
  * return 0 on failure
  */
-int set_socket_reuseaddr(sock_t sock);
+int set_socket_reuseaddr(Socket sock);
 
 /* Set socket to dual (IPv4 + IPv6 socket)
  *
  * return 1 on success
  * return 0 on failure
  */
-int set_socket_dualstack(sock_t sock);
+int set_socket_dualstack(Socket sock);
 
 /* return current monotonic time in milliseconds (ms). */
 uint64_t current_time_monotonic(void);

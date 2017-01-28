@@ -1,28 +1,28 @@
-/* net_crypto.c
- *
+/*
  * Functions for the core network crypto.
  *
  * NOTE: This code has to be perfect. We don't mess around with encryption.
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -903,12 +903,12 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, const uint8_
     }
 
     pthread_mutex_lock(&conn->mutex);
-    uint8_t packet[1 + sizeof(uint16_t) + length + CRYPTO_MAC_SIZE];
+    VLA(uint8_t, packet, 1 + sizeof(uint16_t) + length + CRYPTO_MAC_SIZE);
     packet[0] = NET_PACKET_CRYPTO_DATA;
     memcpy(packet + 1, conn->sent_nonce + (CRYPTO_NONCE_SIZE - sizeof(uint16_t)), sizeof(uint16_t));
     int len = encrypt_data_symmetric(conn->shared_key, conn->sent_nonce, data, length, packet + 1 + sizeof(uint16_t));
 
-    if (len + 1 + sizeof(uint16_t) != sizeof(packet)) {
+    if (len + 1 + sizeof(uint16_t) != SIZEOF_VLA(packet)) {
         pthread_mutex_unlock(&conn->mutex);
         return -1;
     }
@@ -916,7 +916,7 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, const uint8_
     increment_nonce(conn->sent_nonce);
     pthread_mutex_unlock(&conn->mutex);
 
-    return send_packet_to(c, crypt_connection_id, packet, sizeof(packet));
+    return send_packet_to(c, crypt_connection_id, packet, SIZEOF_VLA(packet));
 }
 
 /* Creates and sends a data packet with buffer_start and num to the peer using the fastest route.
@@ -934,13 +934,13 @@ static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint3
     num = htonl(num);
     buffer_start = htonl(buffer_start);
     uint16_t padding_length = (MAX_CRYPTO_DATA_SIZE - length) % CRYPTO_MAX_PADDING;
-    uint8_t packet[sizeof(uint32_t) + sizeof(uint32_t) + padding_length + length];
+    VLA(uint8_t, packet, sizeof(uint32_t) + sizeof(uint32_t) + padding_length + length);
     memcpy(packet, &buffer_start, sizeof(uint32_t));
     memcpy(packet + sizeof(uint32_t), &num, sizeof(uint32_t));
     memset(packet + (sizeof(uint32_t) * 2), PACKET_ID_PADDING, padding_length);
     memcpy(packet + (sizeof(uint32_t) * 2) + padding_length, data, length);
 
-    return send_data_packet(c, crypt_connection_id, packet, sizeof(packet));
+    return send_data_packet(c, crypt_connection_id, packet, SIZEOF_VLA(packet));
 }
 
 static int reset_max_speed_reached(Net_Crypto *c, int crypt_connection_id)

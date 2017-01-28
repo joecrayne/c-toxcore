@@ -1,24 +1,22 @@
-/**  rtp.c
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013-2015 Tox project.
  *
- *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
+ * This file is part of Tox, the free peer to peer instant messenger.
  *
- *   This file is part of Tox.
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *   Tox is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *   Tox is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
- *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
@@ -32,6 +30,7 @@
 #include "../toxcore/util.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 
 
@@ -117,12 +116,12 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Log
         return -1;
     }
 
-    uint8_t rdata[length + sizeof(struct RTPHeader) + 1];
-    memset(rdata, 0, sizeof(rdata));
+    VLA(uint8_t, rdata, length + sizeof(struct RTPHeader) + 1);
+    memset(rdata, 0, SIZEOF_VLA(rdata));
 
     rdata[0] = session->payload_type;
 
-    struct RTPHeader *header = (struct RTPHeader *)(rdata  + 1);
+    struct RTPHeader *header = (struct RTPHeader *)(rdata + 1);
 
     header->ve = 2;
     header->pe = 0;
@@ -148,8 +147,8 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Log
 
         memcpy(rdata + 1 + sizeof(struct RTPHeader), data, length);
 
-        if (-1 == m_send_custom_lossy_packet(session->m, session->friend_number, rdata, sizeof(rdata))) {
-            LOGGER_WARNING(session->m->log, "RTP send failed (len: %d)! std error: %s", sizeof(rdata), strerror(errno));
+        if (-1 == m_send_custom_lossy_packet(session->m, session->friend_number, rdata, SIZEOF_VLA(rdata))) {
+            LOGGER_WARNING(session->m->log, "RTP send failed (len: %d)! std error: %s", SIZEOF_VLA(rdata), strerror(errno));
         }
     } else {
 

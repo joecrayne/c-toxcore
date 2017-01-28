@@ -1,28 +1,28 @@
-/* net_crypto.c
- *
+/*
  * Functions for the core crypto.
  *
  * NOTE: This code has to be perfect. We don't mess around with encryption.
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -127,8 +127,8 @@ int32_t encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, 
         return -1;
     }
 
-    uint8_t temp_plain[length + crypto_box_ZEROBYTES];
-    uint8_t temp_encrypted[length + crypto_box_MACBYTES + crypto_box_BOXZEROBYTES];
+    VLA(uint8_t, temp_plain, length + crypto_box_ZEROBYTES);
+    VLA(uint8_t, temp_encrypted, length + crypto_box_MACBYTES + crypto_box_BOXZEROBYTES);
 
     memset(temp_plain, 0, crypto_box_ZEROBYTES);
     memcpy(temp_plain + crypto_box_ZEROBYTES, plain, length); // Pad the message with 32 0 bytes.
@@ -149,8 +149,8 @@ int32_t decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, 
         return -1;
     }
 
-    uint8_t temp_plain[length + crypto_box_ZEROBYTES];
-    uint8_t temp_encrypted[length + crypto_box_BOXZEROBYTES];
+    VLA(uint8_t, temp_plain, length + crypto_box_ZEROBYTES);
+    VLA(uint8_t, temp_encrypted, length + crypto_box_BOXZEROBYTES);
 
     memset(temp_encrypted, 0, crypto_box_BOXZEROBYTES);
     memcpy(temp_encrypted + crypto_box_BOXZEROBYTES, encrypted, length); // Pad the message with 16 0 bytes.

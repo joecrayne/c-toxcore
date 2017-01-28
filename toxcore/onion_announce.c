@@ -1,24 +1,26 @@
 /*
-* onion_announce.c -- Implementation of the announce part of docs/Prevent_Tracking.txt
-*
-*  Copyright (C) 2013 Tox project All Rights Reserved.
-*
-*  This file is part of Tox.
-*
-*  Tox is free software: you can redistribute it and/or modify
-*  it under the terms of the GNU General Public License as published by
-*  the Free Software Foundation, either version 3 of the License, or
-*  (at your option) any later version.
-*
-*  Tox is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*  GNU General Public License for more details.
-*
-*  You should have received a copy of the GNU General Public License
-*  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
-*
-*/
+ * Implementation of the announce part of docs/Prevent_Tracking.txt
+ */
+
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -424,11 +426,11 @@ static int handle_data_request(void *object, IP_Port source, const uint8_t *pack
         return 1;
     }
 
-    uint8_t data[length - (CRYPTO_PUBLIC_KEY_SIZE + ONION_RETURN_3)];
+    VLA(uint8_t, data, length - (CRYPTO_PUBLIC_KEY_SIZE + ONION_RETURN_3));
     data[0] = NET_PACKET_ONION_DATA_RESPONSE;
     memcpy(data + 1, packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, length - (1 + CRYPTO_PUBLIC_KEY_SIZE + ONION_RETURN_3));
 
-    if (send_onion_response(onion_a->net, onion_a->entries[index].ret_ip_port, data, sizeof(data),
+    if (send_onion_response(onion_a->net, onion_a->entries[index].ret_ip_port, data, SIZEOF_VLA(data),
                             onion_a->entries[index].ret) == -1) {
         return 1;
     }

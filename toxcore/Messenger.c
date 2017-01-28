@@ -1,26 +1,26 @@
-/* Messenger.c
- *
+/*
  * An implementation of a simple text chat only messenger on the tox network core.
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -503,7 +503,7 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
         return -3;
     }
 
-    uint8_t packet[length + 1];
+    VLA(uint8_t, packet, length + 1);
     packet[0] = type + PACKET_ID_MESSAGE;
 
     if (length != 0) {
@@ -965,7 +965,7 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
         return 0;
     }
 
-    uint8_t packet[length + 1];
+    VLA(uint8_t, packet, length + 1);
     packet[0] = packet_id;
 
     if (length != 0) {
@@ -1111,7 +1111,7 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
         return 0;
     }
 
-    uint8_t packet[1 + sizeof(file_type) + sizeof(filesize) + FILE_ID_LENGTH + filename_length];
+    VLA(uint8_t, packet, 1 + sizeof(file_type) + sizeof(filesize) + FILE_ID_LENGTH + filename_length);
     packet[0] = filenumber;
     file_type = htonl(file_type);
     memcpy(packet + 1, &file_type, sizeof(file_type));
@@ -1123,7 +1123,7 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
         memcpy(packet + 1 + sizeof(file_type) + sizeof(filesize) + FILE_ID_LENGTH, filename, filename_length);
     }
 
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet, sizeof(packet), 0);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet, SIZEOF_VLA(packet), 0);
 }
 
 /* Send a file send request.
@@ -1190,7 +1190,7 @@ static int send_file_control_packet(const Messenger *m, int32_t friendnumber, ui
         return -1;
     }
 
-    uint8_t packet[3 + data_length];
+    VLA(uint8_t, packet, 3 + data_length);
 
     packet[0] = send_receive;
     packet[1] = filenumber;
@@ -1200,7 +1200,7 @@ static int send_file_control_packet(const Messenger *m, int32_t friendnumber, ui
         memcpy(packet + 3, data, data_length);
     }
 
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, sizeof(packet), 0);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, SIZEOF_VLA(packet), 0);
 }
 
 /* Send a file control request.
@@ -1378,7 +1378,7 @@ static int64_t send_file_data_packet(const Messenger *m, int32_t friendnumber, u
         return -1;
     }
 
-    uint8_t packet[2 + length];
+    VLA(uint8_t, packet, 2 + length);
     packet[0] = PACKET_ID_FILE_DATA;
     packet[1] = filenumber;
 
@@ -1387,7 +1387,7 @@ static int64_t send_file_data_packet(const Messenger *m, int32_t friendnumber, u
     }
 
     return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                             m->friendlist[friendnumber].friendcon_id), packet, sizeof(packet), 1);
+                             m->friendlist[friendnumber].friendcon_id), packet, SIZEOF_VLA(packet), 1);
 }
 
 #define MAX_FILE_DATA_SIZE (MAX_CRYPTO_DATA_SIZE - 2)
@@ -2024,6 +2024,8 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     set_nospam(&(m->fr), random_int());
     set_filter_function(&(m->fr), &friend_already_added, m);
 
+    m->lastdump = 0;
+
     if (error) {
         *error = MESSENGER_ERROR_NONE;
     }
@@ -2130,7 +2132,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
             }
 
             /* Make sure the NULL terminator is present. */
-            uint8_t data_terminated[data_length + 1];
+            VLA(uint8_t, data_terminated, data_length + 1);
             memcpy(data_terminated, data, data_length);
             data_terminated[data_length] = 0;
 
@@ -2151,7 +2153,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
             }
 
             /* Make sure the NULL terminator is present. */
-            uint8_t data_terminated[data_length + 1];
+            VLA(uint8_t, data_terminated, data_length + 1);
             memcpy(data_terminated, data, data_length);
             data_terminated[data_length] = 0;
 
@@ -2208,7 +2210,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
             uint16_t message_length = data_length;
 
             /* Make sure the NULL terminator is present. */
-            uint8_t message_terminated[message_length + 1];
+            VLA(uint8_t, message_terminated, message_length + 1);
             memcpy(message_terminated, message, message_length);
             message_terminated[message_length] = 0;
             uint8_t type = packet_id - PACKET_ID_MESSAGE;
@@ -2270,7 +2272,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
             ft->paused = FILE_PAUSE_NOT;
             memcpy(ft->id, data + 1 + sizeof(uint32_t) + sizeof(uint64_t), FILE_ID_LENGTH);
 
-            uint8_t filename_terminated[filename_length + 1];
+            VLA(uint8_t, filename_terminated, filename_length + 1);
             uint8_t *filename = NULL;
 
             if (filename_length) {
@@ -2471,18 +2473,22 @@ static void connection_status_cb(Messenger *m, void *userdata)
 
 
 #define DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS 60UL
-static time_t lastdump = 0;
-static char IDString[CRYPTO_PUBLIC_KEY_SIZE * 2 + 1];
-static char *ID2String(const uint8_t *pk)
-{
-    uint32_t i;
 
-    for (i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; i++) {
-        sprintf(&IDString[i * 2], "%02X", pk[i]);
+#define IDSTRING_LEN (CRYPTO_PUBLIC_KEY_SIZE * 2 + 1)
+/* id_str should be of length at least IDSTRING_LEN */
+static char *id_to_string(const uint8_t *pk, char *id_str, size_t length)
+{
+    if (length < IDSTRING_LEN) {
+        snprintf(id_str, length, "Bad buf length");
+        return id_str;
     }
 
-    IDString[CRYPTO_PUBLIC_KEY_SIZE * 2] = 0;
-    return IDString;
+    for (uint32_t i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; i++) {
+        sprintf(&id_str[i * 2], "%02X", pk[i]);
+    }
+
+    id_str[CRYPTO_PUBLIC_KEY_SIZE * 2] = 0;
+    return id_str;
 }
 
 /* Minimum messenger run interval in ms
@@ -2546,8 +2552,8 @@ void do_messenger(Messenger *m, void *userdata)
     do_friends(m, userdata);
     connection_status_cb(m, userdata);
 
-    if (unix_time() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
-        lastdump = unix_time();
+    if (unix_time() > m->lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
+        m->lastdump = unix_time();
         uint32_t client, last_pinged;
 
         for (client = 0; client < LCLIENT_LIST; client++) {
@@ -2557,15 +2563,18 @@ void do_messenger(Messenger *m, void *userdata)
 
             for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6) {
                 if (ip_isset(&assoc->ip_port.ip)) {
-                    last_pinged = lastdump - assoc->last_pinged;
+                    last_pinged = m->lastdump - assoc->last_pinged;
 
                     if (last_pinged > 999) {
                         last_pinged = 999;
                     }
 
+                    char ip_str[IP_NTOA_LEN];
+                    char id_str[IDSTRING_LEN];
                     LOGGER_TRACE(m->log, "C[%2u] %s:%u [%3u] %s",
-                                 client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
-                                 last_pinged, ID2String(cptr->public_key));
+                                 client, ip_ntoa(&assoc->ip_port.ip, ip_str, sizeof(ip_str)),
+                                 ntohs(assoc->ip_port.port), last_pinged,
+                                 id_to_string(cptr->public_key, id_str, sizeof(id_str)));
                 }
             }
         }
@@ -2575,8 +2584,8 @@ void do_messenger(Messenger *m, void *userdata)
 
         /* dht contains additional "friends" (requests) */
         uint32_t num_dhtfriends = m->dht->num_friends;
-        int32_t m2dht[num_dhtfriends];
-        int32_t dht2m[num_dhtfriends];
+        VLA(int32_t, m2dht, num_dhtfriends);
+        VLA(int32_t, dht2m, num_dhtfriends);
 
         for (friend_idx = 0; friend_idx < num_dhtfriends; friend_idx++) {
             m2dht[friend_idx] = -1;
@@ -2617,11 +2626,14 @@ void do_messenger(Messenger *m, void *userdata)
             dhtfptr = &m->dht->friends_list[friend_idx];
 
             if (msgfptr) {
+                char id_str[IDSTRING_LEN];
                 LOGGER_TRACE(m->log, "F[%2u:%2u] <%s> %s",
                              dht2m[friend_idx], friend_idx, msgfptr->name,
-                             ID2String(msgfptr->real_pk));
+                             id_to_string(msgfptr->real_pk, id_str, sizeof(id_str)));
             } else {
-                LOGGER_TRACE(m->log, "F[--:%2u] %s", friend_idx, ID2String(dhtfptr->public_key));
+                char id_str[IDSTRING_LEN];
+                LOGGER_TRACE(m->log, "F[--:%2u] %s", friend_idx,
+                             id_to_string(dhtfptr->public_key, id_str, sizeof(id_str)));
             }
 
             for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
@@ -2631,16 +2643,18 @@ void do_messenger(Messenger *m, void *userdata)
 
                 for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6) {
                     if (ip_isset(&assoc->ip_port.ip)) {
-                        last_pinged = lastdump - assoc->last_pinged;
+                        last_pinged = m->lastdump - assoc->last_pinged;
 
                         if (last_pinged > 999) {
                             last_pinged = 999;
                         }
 
+                        char ip_str[IP_NTOA_LEN];
+                        char id_str[IDSTRING_LEN];
                         LOGGER_TRACE(m->log, "F[%2u] => C[%2u] %s:%u [%3u] %s",
-                                     friend_idx, client, ip_ntoa(&assoc->ip_port.ip),
+                                     friend_idx, client, ip_ntoa(&assoc->ip_port.ip, ip_str, sizeof(ip_str)),
                                      ntohs(assoc->ip_port.port), last_pinged,
-                                     ID2String(cptr->public_key));
+                                     id_to_string(cptr->public_key, id_str, sizeof(id_str)));
                     }
                 }
             }

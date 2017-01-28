@@ -1,31 +1,31 @@
-/* tox.c
- *
+/*
  * The Tox public API.
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
-#define _XOPEN_SOURCE 600
-
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#define _XOPEN_SOURCE 600
 
 #define TOX_DEFINED
 typedef struct Messenger Tox;
@@ -257,9 +257,11 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
         }
 
         if (info->ai_family == AF_INET) {
-            ip_port.ip.ip4.in_addr = ((struct sockaddr_in *)info->ai_addr)->sin_addr;
+            struct sockaddr_in *addr = (struct sockaddr_in *)info->ai_addr;
+            get_ip4(&ip_port.ip.ip4, &addr->sin_addr);
         } else if (info->ai_family == AF_INET6) {
-            ip_port.ip.ip6.in6_addr = ((struct sockaddr_in6 *)info->ai_addr)->sin6_addr;
+            struct sockaddr_in6 *addr = (struct sockaddr_in6 *)info->ai_addr;
+            get_ip6(&ip_port.ip.ip6, &addr->sin6_addr);
         } else {
             continue;
         }
@@ -315,9 +317,11 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
         }
 
         if (info->ai_family == AF_INET) {
-            ip_port.ip.ip4.in_addr = ((struct sockaddr_in *)info->ai_addr)->sin_addr;
+            struct sockaddr_in *addr = (struct sockaddr_in *)info->ai_addr;
+            get_ip4(&ip_port.ip.ip4, &addr->sin_addr);
         } else if (info->ai_family == AF_INET6) {
-            ip_port.ip.ip6.in6_addr = ((struct sockaddr_in6 *)info->ai_addr)->sin6_addr;
+            struct sockaddr_in6 *addr = (struct sockaddr_in6 *)info->ai_addr;
+            get_ip6(&ip_port.ip.ip6, &addr->sin6_addr);
         } else {
             continue;
         }

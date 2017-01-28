@@ -1,25 +1,27 @@
 /*
-* onion_client.c -- Implementation of the client part of docs/Prevent_Tracking.txt
-*                   (The part that uses the onion stuff to connect to the friend)
-*
-*  Copyright (C) 2013 Tox project All Rights Reserved.
-*
-*  This file is part of Tox.
-*
-*  Tox is free software: you can redistribute it and/or modify
-*  it under the terms of the GNU General Public License as published by
-*  the Free Software Foundation, either version 3 of the License, or
-*  (at your option) any later version.
-*
-*  Tox is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*  GNU General Public License for more details.
-*
-*  You should have received a copy of the GNU General Public License
-*  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
-*
-*/
+ * Implementation of the client part of docs/Prevent_Tracking.txt (The part that
+ * uses the onion stuff to connect to the friend)
+ */
+
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -679,7 +681,7 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
         return 1;
     }
 
-    uint8_t plain[1 + ONION_PING_ID_SIZE + len_nodes];
+    VLA(uint8_t, plain, 1 + ONION_PING_ID_SIZE + len_nodes);
     int len = -1;
 
     if (num == 0) {
@@ -697,7 +699,7 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
                            length - (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE), plain);
     }
 
-    if ((uint32_t)len != sizeof(plain)) {
+    if ((uint32_t)len != SIZEOF_VLA(plain)) {
         return 1;
     }
 
@@ -737,20 +739,20 @@ static int handle_data_response(void *object, IP_Port source, const uint8_t *pac
         return 1;
     }
 
-    uint8_t temp_plain[length - ONION_DATA_RESPONSE_MIN_SIZE];
+    VLA(uint8_t, temp_plain, length - ONION_DATA_RESPONSE_MIN_SIZE);
     int len = decrypt_data(packet + 1 + CRYPTO_NONCE_SIZE, onion_c->temp_secret_key, packet + 1,
                            packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
                            length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE), temp_plain);
 
-    if ((uint32_t)len != sizeof(temp_plain)) {
+    if ((uint32_t)len != SIZEOF_VLA(temp_plain)) {
         return 1;
     }
 
-    uint8_t plain[sizeof(temp_plain) - DATA_IN_RESPONSE_MIN_SIZE];
+    VLA(uint8_t, plain, SIZEOF_VLA(temp_plain) - DATA_IN_RESPONSE_MIN_SIZE);
     len = decrypt_data(temp_plain, onion_c->c->self_secret_key, packet + 1, temp_plain + CRYPTO_PUBLIC_KEY_SIZE,
-                       sizeof(temp_plain) - CRYPTO_PUBLIC_KEY_SIZE, plain);
+                       SIZEOF_VLA(temp_plain) - CRYPTO_PUBLIC_KEY_SIZE, plain);
 
-    if ((uint32_t)len != sizeof(plain)) {
+    if ((uint32_t)len != SIZEOF_VLA(plain)) {
         return 1;
     }
 
@@ -759,7 +761,7 @@ static int handle_data_response(void *object, IP_Port source, const uint8_t *pac
     }
 
     return onion_c->Onion_Data_Handlers[plain[0]].function(onion_c->Onion_Data_Handlers[plain[0]].object, temp_plain, plain,
-            sizeof(plain), userdata);
+            SIZEOF_VLA(plain), userdata);
 }
 
 #define DHTPK_DATA_MIN_LENGTH (1 + sizeof(uint64_t) + CRYPTO_PUBLIC_KEY_SIZE)
@@ -897,12 +899,12 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, const uint8_t *data, 
     uint8_t nonce[CRYPTO_NONCE_SIZE];
     random_nonce(nonce);
 
-    uint8_t packet[DATA_IN_RESPONSE_MIN_SIZE + length];
+    VLA(uint8_t, packet, DATA_IN_RESPONSE_MIN_SIZE + length);
     memcpy(packet, onion_c->c->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     int len = encrypt_data(onion_c->friends_list[friend_num].real_public_key, onion_c->c->self_secret_key, nonce, data,
                            length, packet + CRYPTO_PUBLIC_KEY_SIZE);
 
-    if ((uint32_t)len + CRYPTO_PUBLIC_KEY_SIZE != sizeof(packet)) {
+    if ((uint32_t)len + CRYPTO_PUBLIC_KEY_SIZE != SIZEOF_VLA(packet)) {
         return -1;
     }
 
@@ -917,7 +919,7 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, const uint8_t *data, 
 
         uint8_t o_packet[ONION_MAX_PACKET_SIZE];
         len = create_data_request(o_packet, sizeof(o_packet), onion_c->friends_list[friend_num].real_public_key,
-                                  list_nodes[good_nodes[i]].data_public_key, nonce, packet, sizeof(packet));
+                                  list_nodes[good_nodes[i]].data_public_key, nonce, packet, SIZEOF_VLA(packet));
 
         if (len == -1) {
             continue;
@@ -951,19 +953,19 @@ static int send_dht_dhtpk(const Onion_Client *onion_c, int friend_num, const uin
     uint8_t nonce[CRYPTO_NONCE_SIZE];
     random_nonce(nonce);
 
-    uint8_t temp[DATA_IN_RESPONSE_MIN_SIZE + CRYPTO_NONCE_SIZE + length];
+    VLA(uint8_t, temp, DATA_IN_RESPONSE_MIN_SIZE + CRYPTO_NONCE_SIZE + length);
     memcpy(temp, onion_c->c->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(temp + CRYPTO_PUBLIC_KEY_SIZE, nonce, CRYPTO_NONCE_SIZE);
     int len = encrypt_data(onion_c->friends_list[friend_num].real_public_key, onion_c->c->self_secret_key, nonce, data,
                            length, temp + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
 
-    if ((uint32_t)len + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE != sizeof(temp)) {
+    if ((uint32_t)len + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE != SIZEOF_VLA(temp)) {
         return -1;
     }
 
     uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
     len = create_request(onion_c->dht->self_public_key, onion_c->dht->self_secret_key, packet,
-                         onion_c->friends_list[friend_num].dht_public_key, temp, sizeof(temp), CRYPTO_PACKET_DHTPK);
+                         onion_c->friends_list[friend_num].dht_public_key, temp, SIZEOF_VLA(temp), CRYPTO_PACKET_DHTPK);
 
     if (len == -1) {
         return -1;
@@ -1523,7 +1525,7 @@ static int onion_isconnected(const Onion_Client *onion_c)
     }
 
     /* Consider ourselves online if we are announced to half or more nodes
-      we are connected to */
+       we are connected to */
     if (num && announced) {
         if ((num / 2) <= announced && (pnodes / 2) <= num) {
             return 1;
