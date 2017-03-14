@@ -61,7 +61,6 @@ typedef struct {
     unsigned    auto_join : 1;
     unsigned    need_send_peers : 1;
     unsigned    connected : 1;
-
 } Group_Peer;
 
 typedef struct {

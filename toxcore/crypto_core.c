@@ -87,10 +87,17 @@ int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
     return crypto_verify_32(pk1, pk2);
 }
 
+uint16_t random_16b(void)
+{
+    uint16_t randnum;
+    randombytes((uint8_t *)&randnum, sizeof(randnum));
+    return randnum;
+}
+
 uint32_t random_int(void)
 {
     uint32_t randnum;
-    randombytes((uint8_t *)&randnum , sizeof(randnum));
+    randombytes((uint8_t *)&randnum, sizeof(randnum));
     return randnum;
 }
 

@@ -275,13 +275,11 @@ static int64_t get_peer_index(const Group_c *g, uint16_t peer_gid)
 
 static uint16_t find_new_peer_gid(const Group_c *g)
 {
-    uint16_t peer_number;
-    random_bytes((uint8_t *)&peer_number, 2);
-
+    uint16_t peer_number = random_16b();
     size_t tries = 0;
 
     while (get_peer_index(g, peer_number) != -1) {
-        random_bytes((uint8_t *)&peer_number, 2);
+        peer_number = random_16b();
         ++tries;
 
         if (tries > 32) {
@@ -411,7 +409,6 @@ static void apply_changes_in_peers(Group_Chats *g_c, int32_t groupnumber, void *
 
         /* detect almost deleted peers and prepare peers_list slots for delete */
         for (uint32_t i = 0; i < g->numpeers_in_list; ++i) {
-
             uint32_t peer_index = g->peers_list[i];
 
             if (g->peers[peer_index].friendcon_id == ALMOST_DELETED_PEER || g->peers[peer_index].gid < 0) {
@@ -508,7 +505,6 @@ static void apply_changes_in_peers(Group_Chats *g_c, int32_t groupnumber, void *
                     const Group_Peer *peer = &g->peers[i];
 
                     if (peer->friendcon_id != ALMOST_DELETED_PEER && peer->gid >= 0) {
-
                         bool present = false;
 
                         for (uint32_t j = 0; j < g->numpeers_in_list; ++j) {
@@ -3161,6 +3157,7 @@ static int8_t lossy_packet_not_received(Group_c *g, int64_t peer_index, uint16_t
         lossy->bottom_lossy_number = (message_number - MAX_LOSSY_COUNT) + 1;
         lossy->recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;
     }
+
     return 0;
 }
 
@@ -3364,7 +3361,6 @@ static bool possible_groupnum(Group_Chats *g_c, Group_c *ig, uint16_t gn, const 
 static Group_Join_Peer *keep_join_mode(Group_Chats *g_c, Group_c *g, uint64_t ct)
 {
     if (g->keep_join_index >= 0) {
-
         if (g->keep_join_index >= (int)g->numjoinpeers) {
             g->keep_join_index = 0;
         }
@@ -3377,15 +3373,13 @@ static Group_Join_Peer *keep_join_mode(Group_Chats *g_c, Group_c *g, uint64_t ct
 
         if (friendcon_id >= 0 && friend_con_connected(g_c->fr_c, friendcon_id) == FRIENDCONN_STATUS_CONNECTED
                 && !jd->unsubscribed) {
-
             next_time = 5000;
 
-            int mcount = g->numpeers; /* 1 - me */
+            const int mcount = g->numpeers; /* 1 - me */
 
             bool present = false;
-            int m = 0;
 
-            for (; m < mcount; ++m) {
+            for (int m = 0; m < mcount; ++m) {
                 if (id_equal(g->peers[m].real_pk, jd->real_pk)) {
                     next_time = 1000;
                     present = true;

@@ -123,6 +123,11 @@ void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length);
 int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2);
 
 /**
+ * Return a random 16 bit integer.
+ */
+uint16_t random_16b(void);
+
+/**
  * Return a random 32 bit integer.
  */
 uint32_t random_int(void);
