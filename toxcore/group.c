@@ -3825,14 +3825,14 @@ uint32_t saved_conferences_size(const Messenger *m)
 
 static void put16(uint16_t **out, const uint16_t data)
 {
-    (*(uint16_t *)out) = host_tolendian16(data);
-    (*out) += sizeof(uint16_t);
+    **out = host_tolendian16(data);
+    *out += sizeof(uint16_t);
 }
 
 static void putbytes(uint8_t **out, const uint8_t *data, const uint8_t size)
 {
-    memcpy(*(uint8_t *)out, data, size);
-    (*out) += size;
+    memcpy(**out, data, size);
+    *out += size;
 }
 
 void conferences_save(const Messenger *m, uint8_t *data)
