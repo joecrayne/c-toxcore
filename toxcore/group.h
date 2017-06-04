@@ -99,7 +99,8 @@ typedef struct {
 
     uint8_t identifier[GROUP_IDENTIFIER_LENGTH];
 
-    unsigned closest_peers_entry : DESIRED_CLOSE_CONNECTIONS;
+unsigned closest_peers_entry :
+    DESIRED_CLOSE_CONNECTIONS;
     unsigned live : 1;
     unsigned join_mode : 1;
     unsigned fake_join : 1;

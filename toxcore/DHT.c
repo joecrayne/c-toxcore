@@ -194,13 +194,14 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
 
     uint8_t *nonce = packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2;
     random_nonce(nonce);
-    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // TODO(irungentoo): crypto_memzero before exit function
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
     memcpy(temp + 1, data, length);
     temp[0] = request_id;
     int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
                            1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + packet);
 
     if (len == -1) {
+        crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
         return -1;
     }
 
@@ -208,6 +209,7 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
     memcpy(packet + 1, recv_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, send_public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
+    crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
     return len + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE;
 }
 
@@ -235,18 +237,20 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
 
     memcpy(public_key, packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, CRYPTO_PUBLIC_KEY_SIZE);
     const uint8_t *nonce = packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2;
-    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // TODO(irungentoo): crypto_memzero before exit function
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
     int len1 = decrypt_data(public_key, self_secret_key, nonce,
                             packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE,
                             length - (CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + 1), temp);
 
     if (len1 == -1 || len1 == 0) {
+        crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
         return -1;
     }
 
     request_id[0] = temp[0];
     --len1;
     memcpy(data, temp + 1, len1);
+    crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
     return len1;
 }
 
@@ -541,9 +545,9 @@ static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t le
                     char ip_str[IP_NTOA_LEN];
                     LOGGER_TRACE(log, "coipil[%u]: switching ipv4 from %s:%u to %s:%u", i,
                                  ip_ntoa(&list[i].assoc4.ip_port.ip, ip_str, sizeof(ip_str)),
-                                 ntohs(list[i].assoc4.ip_port.port),
+                                 net_ntohs(list[i].assoc4.ip_port.port),
                                  ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)),
-                                 ntohs(ip_port.port));
+                                 net_ntohs(ip_port.port));
                 }
 
                 if (LAN_ip(list[i].assoc4.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0) {
@@ -558,9 +562,9 @@ static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t le
                     char ip_str[IP_NTOA_LEN];
                     LOGGER_TRACE(log, "coipil[%u]: switching ipv6 from %s:%u to %s:%u", i,
                                  ip_ntoa(&list[i].assoc6.ip_port.ip, ip_str, sizeof(ip_str)),
-                                 ntohs(list[i].assoc6.ip_port.port),
+                                 net_ntohs(list[i].assoc6.ip_port.port),
                                  ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)),
-                                 ntohs(ip_port.port));
+                                 net_ntohs(ip_port.port));
                 }
 
                 if (LAN_ip(list[i].assoc6.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0) {
@@ -687,7 +691,7 @@ static uint8_t hardening_correct(const Hardening *h)
  * helper for get_close_nodes(). argument list is a monster :D
  */
 static void get_close_nodes_inner(const uint8_t *public_key, Node_format *nodes_list,
-                                  sa_family_t sa_family, const Client_data *client_list, uint32_t client_list_length,
+                                  Family sa_family, const Client_data *client_list, uint32_t client_list_length,
                                   uint32_t *num_nodes_ptr, uint8_t is_LAN, uint8_t want_good)
 {
     if ((sa_family != AF_INET) && (sa_family != AF_INET6) && (sa_family != 0)) {
@@ -758,7 +762,7 @@ static void get_close_nodes_inner(const uint8_t *public_key, Node_format *nodes_
  * want_good : do we want only good nodes as checked with the hardening returned or not?
  */
 static int get_somewhat_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list,
-                                    sa_family_t sa_family, uint8_t is_LAN, uint8_t want_good)
+                                    Family sa_family, uint8_t is_LAN, uint8_t want_good)
 {
     uint32_t num_nodes = 0, i;
     get_close_nodes_inner(public_key, nodes_list, sa_family,
@@ -784,7 +788,7 @@ static int get_somewhat_close_nodes(const DHT *dht, const uint8_t *public_key, N
     return num_nodes;
 }
 
-int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, sa_family_t sa_family,
+int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, Family sa_family,
                     uint8_t is_LAN, uint8_t want_good)
 {
     memset(nodes_list, 0, MAX_SENT_NODES * sizeof(Node_format));
@@ -867,7 +871,7 @@ static void sort_client_list(Client_data *list, unsigned int length, const uint8
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
     // comparison function can use it as the base of comparison.
-    Cmp_data cmp_list[length];
+    VLA(Cmp_data, cmp_list, length);
 
     for (uint32_t i = 0; i < length; i++) {
         cmp_list[i].base_public_key = comp_public_key;
@@ -950,11 +954,13 @@ static int add_to_close(DHT *dht, const uint8_t *public_key, IP_Port ip_port, bo
 
     unsigned int index = bit_by_bit_cmp(public_key, dht->self_public_key);
 
-    if (index > LCLIENT_LENGTH) {
+    if (index >= LCLIENT_LENGTH) {
         index = LCLIENT_LENGTH - 1;
     }
 
     for (i = 0; i < LCLIENT_NODES; ++i) {
+        /* TODO(iphydf): write bounds checking test to catch the case that
+         * index is left as >= LCLIENT_LENGTH */
         Client_data *client = &dht->close_clientlist[(index * LCLIENT_NODES) + i];
 
         if (is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
@@ -1017,6 +1023,17 @@ static bool is_pk_in_client_list(Client_data *list, unsigned int client_list_len
     return 0;
 }
 
+static bool is_pk_in_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port)
+{
+    unsigned int index = bit_by_bit_cmp(public_key, dht->self_public_key);
+
+    if (index >= LCLIENT_LENGTH) {
+        index = LCLIENT_LENGTH - 1;
+    }
+
+    return is_pk_in_client_list(dht->close_clientlist + index * LCLIENT_NODES, LCLIENT_NODES, public_key, ip_port);
+}
+
 /* Check if the node obtained with a get_nodes with public_key should be pinged.
  * NOTE: for best results call it after addto_lists;
  *
@@ -1031,7 +1048,8 @@ static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_k
         ret = 1;
     }
 
-    if (ret && !client_in_nodelist(dht->to_bootstrap, dht->num_to_bootstrap, public_key)) {
+    if (ret && !client_in_nodelist(dht->to_bootstrap, dht->num_to_bootstrap, public_key)
+            && !is_pk_in_close_list(dht, public_key, ip_port)) {
         if (dht->num_to_bootstrap < MAX_CLOSE_TO_BOOTSTRAP_NODES) {
             memcpy(dht->to_bootstrap[dht->num_to_bootstrap].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
             dht->to_bootstrap[dht->num_to_bootstrap].ip_port = ip_port;
@@ -2093,7 +2111,7 @@ static uint16_t NAT_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t 
 
     for (i = 0; i < len; ++i) {
         if (ip_equal(&ip_portlist[i].ip, &ip)) {
-            portlist[num] = ntohs(ip_portlist[i].port);
+            portlist[num] = net_ntohs(ip_portlist[i].port);
             ++num;
         }
     }
@@ -2124,7 +2142,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
     if (i == numports) { /* If all ports are the same, only try that one port. */
         IP_Port pinging;
         ip_copy(&pinging.ip, &ip);
-        pinging.port = htons(firstport);
+        pinging.port = net_htons(firstport);
         send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
     } else {
         for (i = dht->friends_list[friend_num].nat.punching_index; i != top; ++i) {
@@ -2132,7 +2150,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
             uint16_t port = port_list[(i / 2) % numports] + (i / (2 * numports)) * ((i % 2) ? -1 : 1);
             IP_Port pinging;
             ip_copy(&pinging.ip, &ip);
-            pinging.port = htons(port);
+            pinging.port = net_htons(port);
             send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
         }
 
@@ -2146,7 +2164,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
         ip_copy(&pinging.ip, &ip);
 
         for (i = dht->friends_list[friend_num].nat.punching_index2; i != top; ++i) {
-            pinging.port = htons(port + i);
+            pinging.port = net_htons(port + i);
             send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
         }
 
@@ -2262,7 +2280,7 @@ static int send_hardening_getnode_res(const DHT *dht, const Node_format *sendto,
 }
 
 /* TODO(irungentoo): improve */
-static IPPTsPng *get_closelist_IPPTsPng(DHT *dht, const uint8_t *public_key, sa_family_t sa_family)
+static IPPTsPng *get_closelist_IPPTsPng(DHT *dht, const uint8_t *public_key, Family sa_family)
 {
     uint32_t i;
 
@@ -2393,7 +2411,7 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
 /* Return a random node from all the nodes we are connected to.
  * TODO(irungentoo): improve this function.
  */
-static Node_format random_node(DHT *dht, sa_family_t sa_family)
+static Node_format random_node(DHT *dht, Family sa_family)
 {
     uint8_t id[CRYPTO_PUBLIC_KEY_SIZE];
     uint32_t i;
@@ -2499,7 +2517,7 @@ static void do_hardening(DHT *dht)
 
     for (i = 0; i < LCLIENT_LIST * 2; ++i) {
         IPPTsPng  *cur_iptspng;
-        sa_family_t sa_family;
+        Family sa_family;
         uint8_t   *public_key = dht->close_clientlist[i / 2].public_key;
 
         if (i % 2 == 0) {

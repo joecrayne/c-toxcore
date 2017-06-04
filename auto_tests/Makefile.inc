@@ -1,7 +1,7 @@
 if BUILD_TESTS
 
-TESTS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test tox_test dht_autotest
-check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test tox_test dht_autotest
+TESTS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test tox_test dht_autotest tox_strncasecmp_test
+check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test tox_test dht_autotest tox_strncasecmp_test
 
 AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \
@@ -75,6 +75,14 @@ dht_autotest_CFLAGS = $(AUTOTEST_CFLAGS)
 dht_autotest_LDADD = $(AUTOTEST_LDADD)
 
 
+# TODO(iphydf): This test is broken. The code needs to be fixed, as the test
+# itself is correct.
+#selfname_change_conference_SOURCE = ../auto_tests/selfname_change_conference_test.c
+#
+#selfname_change_conference_CFLAGS = $(AUTOTEST_CFLAGS)
+#
+#selfname_change_conference_LDADD = $(AUTOTEST_LDADD)
+
 if BUILD_AV
 toxav_basic_test_SOURCES = ../auto_tests/toxav_basic_test.c
 
@@ -98,6 +106,13 @@ encryptsave_test_SOURCES = ../auto_tests/encryptsave_test.c
 encryptsave_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
 encryptsave_test_LDADD = $(AUTOTEST_LDADD)
+
+
+tox_strncasecmp_test_SOURCES = ../auto_tests/tox_strncasecmp_test.c
+
+tox_strncasecmp_test_CFLAGS = $(AUTOTEST_CFLAGS)
+
+tox_strncasecmp_test_LDADD = $(AUTOTEST_LDADD)
 
 
 EXTRA_DIST += $(top_srcdir)/auto_tests/helpers.h

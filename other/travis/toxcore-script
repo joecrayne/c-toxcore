@@ -33,7 +33,7 @@ RUN $CMAKE                                      \
   -DBUILD_NTOX=OFF                              \
   -DENABLE_SHARED=OFF                           \
   -DENABLE_STATIC=ON                            \
-  -DTEST_TIMEOUT_SECONDS=300                    \
+  -DTEST_TIMEOUT_SECONDS=120                    \
   -DTRACE=ON                                    \
   $CMAKE_EXTRA_FLAGS
 

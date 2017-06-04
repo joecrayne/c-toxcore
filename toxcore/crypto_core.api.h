@@ -111,6 +111,11 @@ static int32_t public_key_cmp(
     const uint8_t[CRYPTO_PUBLIC_KEY_SIZE] pk2);
 
 /**
+ * Return a random 16 bit integer.
+ */
+static uint16_t random_16b();
+
+/**
  * Return a random 32 bit integer.
  */
 static uint32_t random_int();
