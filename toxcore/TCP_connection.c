@@ -973,8 +973,8 @@ static int tcp_status_callback(void *object, uint32_t number, uint8_t connection
     return 0;
 }
 
-static int tcp_data_callback(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data, uint16_t length,
-                             void *userdata)
+static int tcp_conn_data_callback(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data,
+                                  uint16_t length, void *userdata)
 {
     if (length == 0) {
         return -1;
@@ -1003,8 +1003,8 @@ static int tcp_data_callback(void *object, uint32_t number, uint8_t connection_i
     return 0;
 }
 
-static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length,
-                            void *userdata)
+static int tcp_conn_oob_callback(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length,
+                                 void *userdata)
 {
     if (length == 0) {
         return -1;
@@ -1026,7 +1026,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
     TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
 
     if (con_to && tcp_connection_in_conn(con_to, tcp_connections_number)) {
-        return tcp_data_callback(object, connections_number, 0, data, length, userdata);
+        return tcp_conn_data_callback(object, connections_number, 0, data, length, userdata);
     }
 
     if (tcp_c->tcp_oob_callback) {
@@ -1067,8 +1067,8 @@ static int tcp_relay_set_callbacks(TCP_Connections *tcp_c, int tcp_connections_n
     onion_response_handler(con, &tcp_onion_callback, tcp_c);
     routing_response_handler(con, &tcp_response_callback, con);
     routing_status_handler(con, &tcp_status_callback, con);
-    routing_data_handler(con, &tcp_data_callback, con);
-    oob_data_handler(con, &tcp_oob_callback, con);
+    routing_data_handler(con, &tcp_conn_data_callback, con);
+    oob_data_handler(con, &tcp_conn_oob_callback, con);
 
     return 0;
 }
@@ -1116,12 +1116,12 @@ static int tcp_relay_on_online(TCP_Connections *tcp_c, int tcp_connections_numbe
 static int add_tcp_relay_instance(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t *relay_pk)
 {
     if (ip_port.ip.family == TCP_INET) {
-        ip_port.ip.family = AF_INET;
+        ip_port.ip.family = TOX_AF_INET;
     } else if (ip_port.ip.family == TCP_INET6) {
-        ip_port.ip.family = AF_INET6;
+        ip_port.ip.family = TOX_AF_INET6;
     }
 
-    if (ip_port.ip.family != AF_INET && ip_port.ip.family != AF_INET6) {
+    if (ip_port.ip.family != TOX_AF_INET && ip_port.ip.family != TOX_AF_INET6) {
         return -1;
     }
 
@@ -1276,9 +1276,9 @@ unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_
             memcpy(tcp_relays[copied].public_key, tcp_con->connection->public_key, CRYPTO_PUBLIC_KEY_SIZE);
             tcp_relays[copied].ip_port = tcp_con->connection->ip_port;
 
-            if (tcp_relays[copied].ip_port.ip.family == AF_INET) {
+            if (tcp_relays[copied].ip_port.ip.family == TOX_AF_INET) {
                 tcp_relays[copied].ip_port.ip.family = TCP_INET;
-            } else if (tcp_relays[copied].ip_port.ip.family == AF_INET6) {
+            } else if (tcp_relays[copied].ip_port.ip.family == TOX_AF_INET6) {
                 tcp_relays[copied].ip_port.ip.family = TCP_INET6;
             }
 

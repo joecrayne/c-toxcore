@@ -431,7 +431,7 @@ static int add_ip_port_connection(Net_Crypto *c, int crypt_connection_id, IP_Por
         return -1;
     }
 
-    if (ip_port.ip.family == AF_INET) {
+    if (ip_port.ip.family == TOX_AF_INET) {
         if (!ipport_equal(&ip_port, &conn->ip_portv4) && LAN_ip(conn->ip_portv4.ip) != 0) {
             if (!bs_list_add(&c->ip_port_list, (uint8_t *)&ip_port, crypt_connection_id)) {
                 return -1;
@@ -441,7 +441,7 @@ static int add_ip_port_connection(Net_Crypto *c, int crypt_connection_id, IP_Por
             conn->ip_portv4 = ip_port;
             return 0;
         }
-    } else if (ip_port.ip.family == AF_INET6) {
+    } else if (ip_port.ip.family == TOX_AF_INET6) {
         if (!ipport_equal(&ip_port, &conn->ip_portv6)) {
             if (!bs_list_add(&c->ip_port_list, (uint8_t *)&ip_port, crypt_connection_id)) {
                 return -1;
@@ -486,11 +486,11 @@ static IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
         return conn->ip_portv4;
     }
 
-    if (v6 && conn->ip_portv6.ip.family == AF_INET6) {
+    if (v6 && conn->ip_portv6.ip.family == TOX_AF_INET6) {
         return conn->ip_portv6;
     }
 
-    if (conn->ip_portv4.ip.family == AF_INET) {
+    if (conn->ip_portv4.ip.family == TOX_AF_INET) {
         return conn->ip_portv4;
     }
 
@@ -1609,6 +1609,12 @@ static int create_crypto_connection(Net_Crypto *c)
         id = c->crypto_connections_length;
         ++c->crypto_connections_length;
         memset(&(c->crypto_connections[id]), 0, sizeof(Crypto_Connection));
+        // Memsetting float/double to 0 is non-portable, so we explicitly set them to 0
+        c->crypto_connections[id].packet_recv_rate = 0;
+        c->crypto_connections[id].packet_send_rate = 0;
+        c->crypto_connections[id].last_packets_left_rem = 0;
+        c->crypto_connections[id].packet_send_rate_requested = 0;
+        c->crypto_connections[id].last_packets_left_requested_rem = 0;
 
         if (pthread_mutex_init(&c->crypto_connections[id].mutex, NULL) != 0) {
             pthread_mutex_unlock(&c->connections_mutex);
@@ -1689,12 +1695,12 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
         return -1;
     }
 
-    if (source.ip.family == AF_INET || source.ip.family == AF_INET6) {
+    if (source.ip.family == TOX_AF_INET || source.ip.family == TOX_AF_INET6) {
         if (add_ip_port_connection(c, crypt_connection_id, source) != 0) {
             return -1;
         }
 
-        if (source.ip.family == AF_INET) {
+        if (source.ip.family == TOX_AF_INET) {
             conn->direct_lastrecv_timev4 = unix_time();
         } else {
             conn->direct_lastrecv_timev6 = unix_time();
@@ -1919,13 +1925,13 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
 
     if (add_ip_port_connection(c, crypt_connection_id, ip_port) == 0) {
         if (connected) {
-            if (ip_port.ip.family == AF_INET) {
+            if (ip_port.ip.family == TOX_AF_INET) {
                 conn->direct_lastrecv_timev4 = unix_time();
             } else {
                 conn->direct_lastrecv_timev6 = unix_time();
             }
         } else {
-            if (ip_port.ip.family == AF_INET) {
+            if (ip_port.ip.family == TOX_AF_INET) {
                 conn->direct_lastrecv_timev4 = 0;
             } else {
                 conn->direct_lastrecv_timev6 = 0;
@@ -1957,6 +1963,8 @@ static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t
         return tcp_handle_cookie_request(c, conn->connection_number_tcp, data, length);
     }
 
+    // This unlocks the mutex that at this point is locked by do_tcp before
+    // calling do_tcp_connections.
     pthread_mutex_unlock(&c->tcp_mutex);
     int ret = handle_packet_connection(c, id, data, length, 0, userdata);
     pthread_mutex_lock(&c->tcp_mutex);
@@ -2263,7 +2271,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
 
     pthread_mutex_lock(&conn->mutex);
 
-    if (source.ip.family == AF_INET) {
+    if (source.ip.family == TOX_AF_INET) {
         conn->direct_lastrecv_timev4 = unix_time();
     } else {
         conn->direct_lastrecv_timev6 = unix_time();

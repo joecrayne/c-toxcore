@@ -4,13 +4,15 @@
 #include "config.h"
 #endif
 
+#include "check_compat.h"
+
+#include <sys/param.h>
+#include <time.h>
+
 #include "helpers.h"
 
 #include "../toxcore/DHT.c"
 #include "../toxcore/tox.h"
-
-#include <sys/param.h>
-#include <time.h>
 
 
 // These tests currently fail.
@@ -23,6 +25,22 @@ static bool enable_broken_tests = false;
      memcpy(&x,swap_temp,sizeof(x)); \
     } while(0)
 
+#ifndef USE_IPV6
+#define USE_IPV6 1
+#endif
+
+static inline IP get_loopback()
+{
+    IP ip;
+#if USE_IPV6
+    ip.family = TOX_AF_INET6;
+    ip.ip6 = get_ip6_loopback();
+#else
+    ip.family = TOX_AF_INET;
+    ip.ip4 = get_ip4_loopback();
+#endif
+    return ip;
+}
 
 static void mark_bad(IPPTsPng *ipptp)
 {
@@ -97,7 +115,7 @@ static void test_addto_lists_update(DHT            *dht,
     int used, test, test1, test2, found;
     IP_Port test_ipp;
     uint8_t test_id[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
+    uint8_t ipv6 = ip_port->ip.family == TOX_AF_INET6 ? 1 : 0;
 
     // check id update for existing ip_port
     test = rand() % length;
@@ -172,7 +190,7 @@ static void test_addto_lists_bad(DHT            *dht,
     int used, test1, test2, test3;
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE], test_id1[CRYPTO_PUBLIC_KEY_SIZE], test_id2[CRYPTO_PUBLIC_KEY_SIZE],
             test_id3[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
+    uint8_t ipv6 = ip_port->ip.family == TOX_AF_INET6 ? 1 : 0;
 
     random_bytes(public_key, sizeof(public_key));
     mark_all_good(list, length, ipv6);
@@ -216,7 +234,7 @@ static void test_addto_lists_possible_bad(DHT            *dht,
     int used, test1, test2, test3;
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE], test_id1[CRYPTO_PUBLIC_KEY_SIZE], test_id2[CRYPTO_PUBLIC_KEY_SIZE],
             test_id3[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
+    uint8_t ipv6 = ip_port->ip.family == TOX_AF_INET6 ? 1 : 0;
 
     random_bytes(public_key, sizeof(public_key));
     mark_all_good(list, length, ipv6);
@@ -278,7 +296,7 @@ static void test_addto_lists_good(DHT            *dht,
                                   const uint8_t  *comp_client_id)
 {
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
+    uint8_t ipv6 = ip_port->ip.family == TOX_AF_INET6 ? 1 : 0;
 
     mark_all_good(list, length, ipv6);
 
@@ -613,8 +631,7 @@ loop_top:
 
     for (i = 0; i < NUM_DHT; ++i) {
         IP_Port ip_port;
-        ip_init(&ip_port.ip, 1);
-        ip_port.ip.ip6.uint8[15] = 1;
+        ip_port.ip = get_loopback();
         ip_port.port = net_htons(DHT_DEFAULT_PORT + i);
         DHT_bootstrap(dhts[(i - 1) % NUM_DHT], ip_port, dhts[i]->self_public_key);
     }
@@ -701,10 +718,10 @@ static void random_ip(IP_Port *ipp, int family)
     uint8_t *ip = NULL;
     size_t size;
 
-    if (family == AF_INET || family == TCP_INET) {
+    if (family == TOX_AF_INET || family == TCP_INET) {
         ip = (uint8_t *)&ipp->ip.ip4;
         size = sizeof(ipp->ip.ip4);
-    } else if (family == AF_INET6 || family == TCP_INET6) {
+    } else if (family == TOX_AF_INET6 || family == TCP_INET6) {
         ip = (uint8_t *)&ipp->ip.ip6;
         size = sizeof(ipp->ip.ip6);
     } else {
@@ -732,18 +749,18 @@ START_TEST(test_dht_node_packing)
     random_bytes(nodes[1].public_key, pk_size);
     random_bytes(nodes[2].public_key, pk_size);
 
-    random_ip(&nodes[0].ip_port, AF_INET);
-    random_ip(&nodes[1].ip_port, AF_INET);
-    random_ip(&nodes[2].ip_port, AF_INET);
+    random_ip(&nodes[0].ip_port, TOX_AF_INET);
+    random_ip(&nodes[1].ip_port, TOX_AF_INET);
+    random_ip(&nodes[2].ip_port, TOX_AF_INET);
     dht_pack_unpack(nodes, 3, data, length);
 
-    random_ip(&nodes[0].ip_port, AF_INET);
-    random_ip(&nodes[1].ip_port, AF_INET);
+    random_ip(&nodes[0].ip_port, TOX_AF_INET);
+    random_ip(&nodes[1].ip_port, TOX_AF_INET);
     random_ip(&nodes[2].ip_port, TCP_INET);
     dht_pack_unpack(nodes, 3, data, length);
 
-    random_ip(&nodes[0].ip_port, AF_INET);
-    random_ip(&nodes[1].ip_port, AF_INET6);
+    random_ip(&nodes[0].ip_port, TOX_AF_INET);
+    random_ip(&nodes[1].ip_port, TOX_AF_INET6);
     random_ip(&nodes[2].ip_port, TCP_INET6);
     dht_pack_unpack(nodes, 3, data, length);
 
@@ -752,9 +769,9 @@ START_TEST(test_dht_node_packing)
     random_ip(&nodes[2].ip_port, TCP_INET);
     dht_pack_unpack(nodes, 3, data, length);
 
-    random_ip(&nodes[0].ip_port, AF_INET6);
-    random_ip(&nodes[1].ip_port, AF_INET6);
-    random_ip(&nodes[2].ip_port, AF_INET6);
+    random_ip(&nodes[0].ip_port, TOX_AF_INET6);
+    random_ip(&nodes[1].ip_port, TOX_AF_INET6);
+    random_ip(&nodes[2].ip_port, TOX_AF_INET6);
     dht_pack_unpack(nodes, 3, data, length);
 
     free(data);

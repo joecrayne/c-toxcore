@@ -32,13 +32,14 @@
 #include <sys/epoll.h>
 #endif
 
-#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__MACH__)
+// Disable MSG_NOSIGNAL on systems not supporting it, e.g. Windows, FreeBSD
+#if !defined(MSG_NOSIGNAL)
 #define MSG_NOSIGNAL 0
 #endif
 
-#define MAX_INCOMMING_CONNECTIONS 256
+#define MAX_INCOMING_CONNECTIONS 256
 
-#define TCP_MAX_BACKLOG MAX_INCOMMING_CONNECTIONS
+#define TCP_MAX_BACKLOG MAX_INCOMING_CONNECTIONS
 
 #define MAX_PACKET_SIZE 2048
 

@@ -29,6 +29,8 @@
 
 #include "util.h"
 
+#define PORTS_PER_DISCOVERY 10
+
 /* return 1 if the friendcon_id is not valid.
  * return 0 if the friendcon_id is valid.
  */
@@ -511,7 +513,7 @@ static int handle_new_connections(void *object, New_Connection *n_c)
         connection_lossy_data_handler(fr_c->net_crypto, id, &handle_lossy_packet, fr_c, friendcon_id);
         friend_con->crypt_connection_id = id;
 
-        if (n_c->source.ip.family != AF_INET && n_c->source.ip.family != AF_INET6) {
+        if (n_c->source.ip.family != TOX_AF_INET && n_c->source.ip.family != TOX_AF_INET6) {
             set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->dht_ip_port, 0);
         } else {
             friend_con->dht_ip_port = n_c->source;
@@ -827,6 +829,8 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_dis
     temp->net_crypto = onion_c->c;
     temp->onion_c = onion_c;
     temp->local_discovery_enabled = local_discovery_enabled;
+    // Don't include default port in port range
+    temp->next_LANport = TOX_PORTRANGE_FROM + 1;
 
     new_connection_handler(temp->net_crypto, &handle_new_connections, temp);
 
@@ -841,7 +845,20 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_dis
 static void LANdiscovery(Friend_Connections *fr_c)
 {
     if (fr_c->last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
+        const uint16_t first = fr_c->next_LANport;
+        uint16_t last = first + PORTS_PER_DISCOVERY;
+        last = last > TOX_PORTRANGE_TO ? TOX_PORTRANGE_TO : last;
+
+        // Always send to default port
         send_LANdiscovery(net_htons(TOX_PORT_DEFAULT), fr_c->dht);
+
+        // And check some extra ports
+        for (uint16_t port = first; port < last; port++) {
+            send_LANdiscovery(net_htons(port), fr_c->dht);
+        }
+
+        // Don't include default port in port range
+        fr_c->next_LANport = last != TOX_PORTRANGE_TO ? last : TOX_PORTRANGE_FROM + 1;
         fr_c->last_LANdiscovery = unix_time();
     }
 }
@@ -861,6 +878,7 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
                     if (friend_con->dht_lock) {
                         DHT_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock);
                         friend_con->dht_lock = 0;
+                        memset(friend_con->dht_temp_pk, 0, CRYPTO_PUBLIC_KEY_SIZE);
                     }
                 }
 

@@ -21,11 +21,14 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#define _XOPEN_SOURCE 500
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#include "helpers.h"
 
 #include "../toxcore/tox.h"
 #include "../toxencryptsave/toxencryptsave.h"
@@ -54,8 +57,6 @@ static void cbconfmembers(Tox *tox, uint32_t conference_number, uint32_t peer_nu
 
 int main(void)
 {
-    uint32_t conference_number;
-    struct timespec sleeptime;
     struct Tox_Options to;
     Tox *t;
     TOX_ERR_CONFERENCE_NEW conference_err;
@@ -66,18 +67,14 @@ int main(void)
 
     tox_callback_conference_namelist_change(t, cbconfmembers);
 
-    if ((conference_number = tox_conference_new(t, &conference_err)) == UINT32_MAX) {
+    if (tox_conference_new(t, &conference_err) == UINT32_MAX) {
         tox_kill(t);
         fprintf(stderr, "error: could not create new conference, error code %d\n", conference_err);
         return 2;
     }
 
     tox_iterate(t, NULL);
-
-    sleeptime.tv_sec = 0;
-    sleeptime.tv_nsec = tox_iteration_interval(t) * 1E6;
-
-    nanosleep(&sleeptime, NULL);
+    c_sleep(tox_iteration_interval(t));
 
     if (!tox_self_set_name(t, (const uint8_t *)newname, strlen(newname), &name_err)) {
         tox_kill(t);
@@ -86,7 +83,7 @@ int main(void)
     }
 
     tox_iterate(t, NULL);
-    nanosleep(&sleeptime, NULL);
+    c_sleep(tox_iteration_interval(t));
     tox_iterate(t, NULL);
 
     fprintf(stderr, "error: name was not changed in callback. exiting.\n");

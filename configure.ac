@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([tox], [0.1.8])
+AC_INIT([tox], [0.1.11])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([toxcore/net_crypto.c])
 AC_CONFIG_HEADERS([config.h])
@@ -192,6 +192,16 @@ AC_ARG_ENABLE([[epoll]],
     [enable_epoll=${enableval}],
     [enable_epoll='auto']
   )
+
+AC_ARG_ENABLE([[ipv6]],
+  [AS_HELP_STRING([[--disable-ipv6[=ARG]]], [use ipv4 in tests (yes, no, auto) [auto]])],
+    [use_ipv6=${enableval}],
+    [use_ipv6='auto']
+  )
+
+if test "$use_ipv6" != "yes"; then
+  AC_DEFINE([USE_IPV6],[0],[define to 0 to force ipv4])
+fi
 
 AX_HAVE_EPOLL
 if test "$enable_epoll" != "no"; then

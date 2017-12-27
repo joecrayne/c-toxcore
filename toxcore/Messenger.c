@@ -33,7 +33,6 @@
 
 #include <assert.h>
 
-
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status, void *userdata);
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length, uint8_t congestion_control);
@@ -166,10 +165,10 @@ static int send_offline_packet(Messenger *m, int friendcon_id)
                              sizeof(packet), 0) != -1;
 }
 
-static int handle_status(void *object, int i, uint8_t status, void *userdata);
-static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len, void *userdata);
-static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length,
-                                      void *userdata);
+static int m_handle_status(void *object, int i, uint8_t status, void *userdata);
+static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t len, void *userdata);
+static int m_handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length,
+                                        void *userdata);
 
 static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t status)
 {
@@ -198,8 +197,8 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
             m->friendlist[i].userstatus = USERSTATUS_NONE;
             m->friendlist[i].is_typing = 0;
             m->friendlist[i].message_id = 0;
-            friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
-                                        &handle_custom_lossy_packet, m, i);
+            friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &m_handle_status, &m_handle_packet,
+                                        &m_handle_custom_lossy_packet, m, i);
 
             if (m->numfriends == i) {
                 ++m->numfriends;
@@ -376,8 +375,6 @@ static int do_receipts(Messenger *m, int32_t friendnumber, void *userdata)
     struct Receipts *receipts = m->friendlist[friendnumber].receipts_start;
 
     while (receipts) {
-        struct Receipts *temp_r = receipts->next;
-
         if (friend_received_packet(m, friendnumber, receipts->packet_num) == -1) {
             break;
         }
@@ -386,9 +383,13 @@ static int do_receipts(Messenger *m, int32_t friendnumber, void *userdata)
             (*m->read_receipt)(m, friendnumber, receipts->msg_id, userdata);
         }
 
+        struct Receipts *r_next = receipts->next;
+
         free(receipts);
-        m->friendlist[friendnumber].receipts_start = temp_r;
-        receipts = temp_r;
+
+        m->friendlist[friendnumber].receipts_start = r_next;
+
+        receipts = r_next;
     }
 
     if (!m->friendlist[friendnumber].receipts_start) {
@@ -1757,8 +1758,8 @@ int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, 
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length, 0);
 }
 
-static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length,
-                                      void *userdata)
+static int m_handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length,
+                                        void *userdata)
 {
     Messenger *m = (Messenger *)object;
 
@@ -2080,7 +2081,7 @@ static void check_friend_request_timed_out(Messenger *m, uint32_t i, uint64_t t,
     }
 }
 
-static int handle_status(void *object, int i, uint8_t status, void *userdata)
+static int m_handle_status(void *object, int i, uint8_t status, void *userdata)
 {
     Messenger *m = (Messenger *)object;
 
@@ -2095,7 +2096,7 @@ static int handle_status(void *object, int i, uint8_t status, void *userdata)
     return 0;
 }
 
-static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len, void *userdata)
+static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t len, void *userdata)
 {
     if (len == 0) {
         return -1;
@@ -2527,8 +2528,8 @@ void do_messenger(Messenger *m, void *userdata)
             /* Add self tcp server. */
             IP_Port local_ip_port;
             local_ip_port.port = m->options.tcp_server_port;
-            local_ip_port.ip.family = AF_INET;
-            local_ip_port.ip.ip4.uint32 = INADDR_LOOPBACK;
+            local_ip_port.ip.family = TOX_AF_INET;
+            local_ip_port.ip.ip4 = get_ip4_loopback();
             add_tcp_relay(m->net_crypto, local_ip_port,
                           tcp_server_public_key(m->tcp_server));
         }
@@ -2909,7 +2910,7 @@ uint32_t messenger_size(const Messenger *m)
              + sizesubhead;
 }
 
-static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
+static uint8_t *messenger_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
 {
     host_to_lendian32(data, len);
     data += sizeof(uint32_t);
@@ -2935,75 +2936,75 @@ void messenger_save(const Messenger *m, uint8_t *data)
     assert(sizeof(get_nospam(&m->fr)) == sizeof(uint32_t));
     len = size32 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE;
     type = MESSENGER_STATE_TYPE_NOSPAMKEYS;
-    data = z_state_save_subheader(data, len, type);
+    data = messenger_save_subheader(data, len, type);
     *(uint32_t *)data = get_nospam(&(m->fr));
     save_keys(m->net_crypto, data + size32);
     data += len;
 
     len = saved_friendslist_size(m);
     type = MESSENGER_STATE_TYPE_FRIENDS;
-    data = z_state_save_subheader(data, len, type);
+    data = messenger_save_subheader(data, len, type);
     friends_list_save(m, data);
     data += len;
 
     len = m->name_length;
     type = MESSENGER_STATE_TYPE_NAME;
-    data = z_state_save_subheader(data, len, type);
+    data = messenger_save_subheader(data, len, type);
     memcpy(data, m->name, len);
     data += len;
 
     len = m->statusmessage_length;
     type = MESSENGER_STATE_TYPE_STATUSMESSAGE;
-    data = z_state_save_subheader(data, len, type);
+    data = messenger_save_subheader(data, len, type);
     memcpy(data, m->statusmessage, len);
     data += len;
 
     len = 1;
     type = MESSENGER_STATE_TYPE_STATUS;
-    data = z_state_save_subheader(data, len, type);
+    data = messenger_save_subheader(data, len, type);
     *data = m->userstatus;
     data += len;
 
     len = DHT_size(m->dht);
     type = MESSENGER_STATE_TYPE_DHT;
-    data = z_state_save_subheader(data, len, type);
+    data = messenger_save_subheader(data, len, type);
     DHT_save(m->dht, data);
     data += len;
 
     Node_format relays[NUM_SAVED_TCP_RELAYS];
     type = MESSENGER_STATE_TYPE_TCP_RELAY;
     uint8_t *temp_data = data;
-    data = z_state_save_subheader(temp_data, 0, type);
+    data = messenger_save_subheader(temp_data, 0, type);
     unsigned int num = copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
     int l = pack_nodes(data, NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6), relays, num);
 
     if (l > 0) {
         len = l;
-        data = z_state_save_subheader(temp_data, len, type);
+        data = messenger_save_subheader(temp_data, len, type);
         data += len;
     }
 
     Node_format nodes[NUM_SAVED_PATH_NODES];
     type = MESSENGER_STATE_TYPE_PATH_NODE;
     temp_data = data;
-    data = z_state_save_subheader(data, 0, type);
+    data = messenger_save_subheader(data, 0, type);
     memset(nodes, 0, sizeof(nodes));
     num = onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
     l = pack_nodes(data, NUM_SAVED_PATH_NODES * packed_node_size(TCP_INET6), nodes, num);
 
     if (l > 0) {
         len = l;
-        data = z_state_save_subheader(temp_data, len, type);
+        data = messenger_save_subheader(temp_data, len, type);
         data += len;
     }
 
     len = saved_conferences_size(m);
     type = MESSENGER_STATE_TYPE_CONFERENCES;
-    data = z_state_save_subheader(data, len, type);
+    data = messenger_save_subheader(data, len, type);
     conferences_save(m, data);
     data += len;
 
-    z_state_save_subheader(data, 0, MESSENGER_STATE_TYPE_END);
+    messenger_save_subheader(data, 0, MESSENGER_STATE_TYPE_END);
 }
 
 static int messenger_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)

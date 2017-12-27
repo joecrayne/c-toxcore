@@ -14,7 +14,7 @@ set(CMAKE_MODULE_PATH ${toxcore_SOURCE_DIR}/cmake)
 # versions in a synchronised way.
 set(PROJECT_VERSION_MAJOR "0")
 set(PROJECT_VERSION_MINOR "1")
-set(PROJECT_VERSION_PATCH "8")
+set(PROJECT_VERSION_PATCH "11")
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
 # set .so library version / following libtool scheme
@@ -41,9 +41,10 @@ include(AddCompilerFlag)
 include(ApiDsl)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
-include(CTest)
 include(MacRpath)
 include(StrictAbi)
+
+enable_testing()
 
 set(CMAKE_MACOSX_RPATH ON)
 
@@ -78,6 +79,8 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_flag("-Wno-sign-compare")
     add_flag("-Wno-sign-conversion")
     add_flag("-Wno-tautological-constant-out-of-range-compare")
+    # Our use of mutexes results in a false positive, see 1bbe446
+    add_flag("-Wno-thread-safety-analysis")
     add_flag("-Wno-type-limits")
     add_flag("-Wno-undef")
     add_flag("-Wno-unreachable-code")
@@ -145,11 +148,16 @@ else()
   add_dllflag("-Wl,-z,defs")
 endif()
 
+option(USE_IPV6 "Use IPv6 in tests" ON)
+if(NOT USE_IPV6)
+  add_definitions(-DUSE_IPV6=0)
+endif()
+
 option(BUILD_TOXAV "Whether to build the tox AV library" ON)
 
 include(Dependencies)
 
-if (BUILD_TOXAV)
+if(BUILD_TOXAV)
   if(NOT OPUS_FOUND)
     message(SEND_ERROR "Option BUILD_TOXAV is enabled but required library OPUS was not found.")
   endif()
@@ -381,7 +389,7 @@ elseif(FORMAT_TEST)
 endif()
 
 function(auto_test target)
-  if(CHECK_FOUND)
+  if(CHECK_FOUND AND NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
     add_c_executable(auto_${target}_test auto_tests/${target}_test.c)
     target_link_modules(auto_${target}_test
       toxcore
@@ -390,17 +398,29 @@ function(auto_test target)
     if(BUILD_TOXAV)
       target_link_modules(auto_${target}_test toxav)
     endif()
-    add_test(NAME ${target} COMMAND auto_${target}_test)
-    set_tests_properties(${target} PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
+    if(NOT ARGV1 STREQUAL "DONT_RUN")
+      add_test(NAME ${target} COMMAND auto_${target}_test)
+      set_tests_properties(${target} PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
+    endif()
   endif()
 endfunction()
 
+if(BUILD_TOXAV)
+  add_c_executable(auto_monolith_test auto_tests/monolith_test.c)
+  target_link_modules(auto_monolith_test
+    ${LIBSODIUM_LIBRARIES}
+    ${OPUS_LIBRARIES}
+    ${VPX_LIBRARIES}
+    ${toxcore_PKGCONFIG_LIBS})
+  add_test(NAME monolith COMMAND auto_monolith_test)
+endif()
+
 auto_test(TCP)
 auto_test(conference)
-auto_test(crypto)
-auto_test(dht)
+auto_test(crypto                        MSVC_DONT_BUILD)
+auto_test(dht                           MSVC_DONT_BUILD)
 auto_test(encryptsave)
-auto_test(messenger)
+auto_test(messenger                     MSVC_DONT_BUILD)
 auto_test(network)
 auto_test(onion)
 auto_test(resource_leak)
@@ -412,9 +432,10 @@ auto_test(tox_many_tcp)
 auto_test(tox_one)
 auto_test(tox_strncasecmp)
 auto_test(version)
-# TODO(iphydf): This test is broken. The code needs to be fixed, as the test
-# itself is correct.
-#auto_test(selfname_change_conference)
+# TODO(iphydf): These tests are broken. The code needs to be fixed, as the
+# tests themselves are correct.
+auto_test(selfname_change_conference    DONT_RUN)
+auto_test(self_conference_title_change  DONT_RUN)
 
 if(BUILD_TOXAV)
   auto_test(toxav_basic)
@@ -445,12 +466,16 @@ if(BOOTSTRAP_DAEMON)
       other/bootstrap_daemon/src/command_line_arguments.c
       other/bootstrap_daemon/src/command_line_arguments.h
       other/bootstrap_daemon/src/config.c
-      other/bootstrap_daemon/src/config_defaults.h
       other/bootstrap_daemon/src/config.h
+      other/bootstrap_daemon/src/config_defaults.h
+      other/bootstrap_daemon/src/global.h
       other/bootstrap_daemon/src/log.c
       other/bootstrap_daemon/src/log.h
+      other/bootstrap_daemon/src/log_backend_stdout.c
+      other/bootstrap_daemon/src/log_backend_stdout.h
+      other/bootstrap_daemon/src/log_backend_syslog.c
+      other/bootstrap_daemon/src/log_backend_syslog.h
       other/bootstrap_daemon/src/tox-bootstrapd.c
-      other/bootstrap_daemon/src/global.h
       other/bootstrap_node_packets.c
       other/bootstrap_node_packets.h)
     target_link_modules(tox-bootstrapd toxnetcrypto ${LIBCONFIG_LIBRARIES})

@@ -59,12 +59,6 @@
 #define PING_ROUNDTRIP 2
 #define BAD_NODE_TIMEOUT (PING_INTERVAL + PINGS_MISSED_NODE_GOES_BAD * (PING_INTERVAL + PING_ROUNDTRIP))
 
-/* Redefinitions of variables for safe transfer over wire. */
-#define TOX_AF_INET 2
-#define TOX_AF_INET6 10
-#define TOX_TCP_INET 130
-#define TOX_TCP_INET6 138
-
 /* The number of "fake" friends to add (for optimization purposes and so our paths for the onion part are more random) */
 #define DHT_FAKE_FRIEND_NUMBER 2
 
@@ -94,12 +88,6 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
    return -1 if not valid request. */
 int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *request_id, const uint8_t *packet, uint16_t length);
-
-/* Functions to transfer ips safely across wire. */
-void to_net_family(IP *ip);
-
-/* return 0 on success, -1 on failure. */
-int to_host_family(IP *ip);
 
 typedef struct {
     IP_Port     ip_port;
@@ -214,14 +202,17 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 /* struct to store some shared keys so we don't have to regenerate them for each request. */
 #define MAX_KEYS_PER_SLOT 4
 #define KEYS_TIMEOUT 600
+
 typedef struct {
-    struct {
-        uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
-        uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-        uint32_t times_requested;
-        uint8_t  stored; /* 0 if not, 1 if is */
-        uint64_t time_last_requested;
-    } keys[256 * MAX_KEYS_PER_SLOT];
+    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
+    uint32_t times_requested;
+    uint8_t  stored; /* 0 if not, 1 if is */
+    uint64_t time_last_requested;
+} Shared_Key;
+
+typedef struct {
+    Shared_Key keys[256 * MAX_KEYS_PER_SLOT];
 } Shared_Keys;
 
 /*----------------------------------------------------------------------------------*/
@@ -452,6 +443,6 @@ int DHT_isconnected(const DHT *dht);
 int DHT_non_lan_connected(const DHT *dht);
 
 
-int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
+uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
 
 #endif
