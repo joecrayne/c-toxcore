@@ -2148,7 +2148,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
             friend_connection_callbacks(g_c->m->fr_c, friendcon_id, GROUPCHAT_CALLBACK_INDEX, &g_handle_status,
                                         &g_handle_packet, &handle_lossy, g_c, friendcon_id);
 
-            g->peers[peer_index].group_number = ntohs(*(uint16_t *)(data + 1));
+            g->peers[peer_index].group_number = net_ntohs(*(const uint16_t *)(data + 1));
 
             g->need_send_name = true;
             group_new_peer_send(g_c, groupnumber, peer_gid, real_pk, temp_pk);
@@ -2476,7 +2476,7 @@ static void handle_direct_packet(Group_Chats *g_c, int32_t groupnumber, const ui
                 for (; length > (CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint16_t));
                         length -= (CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint16_t)),
                         data += (CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint16_t))) {
-                    set_peer_groupnum(g, data, ntohs(*(uint16_t *)(data + CRYPTO_PUBLIC_KEY_SIZE)));
+                    set_peer_groupnum(g, data, net_ntohs(*(const uint16_t *)(data + CRYPTO_PUBLIC_KEY_SIZE)));
                 }
             }
 
@@ -2824,7 +2824,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
         return;
     }
 
-    uint16_t from_peer_gid = net_ntohs(*(uint16_t *)data);
+    uint16_t from_peer_gid = net_ntohs(*(const uint16_t *)data);
     int64_t index = get_peer_index(g, from_peer_gid);
 
     uint8_t msg_id = data[sizeof(uint16_t) + sizeof(uint32_t)];
@@ -3889,8 +3889,9 @@ int conferences_load(Messenger *m, const uint8_t *data, uint32_t length)
 
     g_c->num_chats = 0;
 
-    size_t numgchats = lendian_to_host16(*(uint16_t *)data);
-    data += sizeof(uint16_t), length -= sizeof(uint16_t);
+    size_t numgchats = lendian_to_host16(*(const uint16_t *)data);
+    data += sizeof(uint16_t);
+    length -= sizeof(uint16_t);
 
     for (uint32_t i = 0; i < numgchats; ++i) {
         if (length < GROUP_IDENTIFIER_LENGTH + 4) {
@@ -3902,7 +3903,6 @@ int conferences_load(Messenger *m, const uint8_t *data, uint32_t length)
         length -= GROUP_IDENTIFIER_LENGTH;
 
         Group_c *g = get_group_c(g_c, grounumber);
-
         if (!g) {
             return -1;
         }
@@ -3937,7 +3937,7 @@ int conferences_load(Messenger *m, const uint8_t *data, uint32_t length)
         data += g->title_len;
         length -= g->title_len;
 
-        g->numjoinpeers = lendian_to_host16(*(uint16_t *)data);
+        g->numjoinpeers = lendian_to_host16(*(const uint16_t *)data);
         data += sizeof(uint16_t);
         length -= sizeof(uint16_t);
 
