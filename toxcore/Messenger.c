@@ -2097,7 +2097,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     }
 
 #ifndef VANILLA_NACL
-    m->group_announce = new_gca(m->dht);
+    m->group_announce = new_gca_list();
 
     if (m->group_announce == nullptr) {
         kill_networking(m->net);
@@ -2110,12 +2110,10 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     m->group_handler = new_dht_groupchats(m);
 
     if (m->group_handler == nullptr) {
-        kill_gca(m->group_announce);
+        kill_networking(m->net);
         kill_net_crypto(m->net_crypto);
         kill_dht(m->dht);
-        kill_networking(m->net);
-        friendreq_kill(m->fr);
-        logger_kill(m->log);
+//        kill_gca(m->group_announce);
         free(m);
         return nullptr;
     }
@@ -2124,7 +2122,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 
     m->onion = new_onion(m->dht);
     m->onion_a = new_onion_announce(m->dht);
-    m->onion_c = new_onion_client(m->net_crypto);
+    m->onion_c =  new_onion_client(m->net_crypto);
     m->fr_c = new_friend_connections(m->onion_c, options->local_discovery_enabled);
 
     if (!(m->onion && m->onion_a && m->onion_c)) {
@@ -2133,8 +2131,8 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
 #ifndef VANILLA_NACL
-        kill_dht_groupchats(m->group_handler);
-        kill_gca(m->group_announce);
+//        kill_gca(m->group_announce);
+        kill_groupchats(m->group_handler);
 #endif /* VANILLA_NACL */
         kill_net_crypto(m->net_crypto);
         kill_dht(m->dht);
@@ -2154,10 +2152,6 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
             kill_onion(m->onion);
             kill_onion_announce(m->onion_a);
             kill_onion_client(m->onion_c);
-#ifndef VANILLA_NACL
-            kill_dht_groupchats(m->group_handler);
-            kill_gca(m->group_announce);
-#endif /* VANILLA_NACL */
             kill_net_crypto(m->net_crypto);
             kill_dht(m->dht);
             kill_networking(m->net);
@@ -2204,10 +2198,6 @@ void kill_messenger(Messenger *m)
     kill_onion(m->onion);
     kill_onion_announce(m->onion_a);
     kill_onion_client(m->onion_c);
-#ifndef VANILLA_NACL
-    kill_dht_groupchats(m->group_handler);
-    kill_gca(m->group_announce);
-#endif /* VANILLA_NACL */
     kill_net_crypto(m->net_crypto);
     kill_dht(m->dht);
     kill_networking(m->net);
