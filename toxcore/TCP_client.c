@@ -502,14 +502,14 @@ int set_tcp_connection_number(TCP_Client_Connection *con, uint8_t con_id, uint32
     return 0;
 }
 
-void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint32_t number,
+void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(Env *env, void *object, uint32_t number,
                           uint8_t connection_id, const uint8_t *data, uint16_t length, void *userdata), void *object)
 {
     con->data_callback = data_callback;
     con->data_callback_object = object;
 }
 
-void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void *object, const uint8_t *public_key,
+void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(Env *env, void *object, const uint8_t *public_key,
                       const uint8_t *data, uint16_t length, void *userdata), void *object)
 {
     con->oob_data_callback = oob_data_callback;
@@ -599,7 +599,7 @@ int send_onion_request(TCP_Client_Connection *con, const uint8_t *data, uint16_t
     return write_packet_TCP_client_secure_connection(con, packet, SIZEOF_VLA(packet), 0);
 }
 
-void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, const uint8_t *data,
+void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(Env *env, void *object, const uint8_t *data,
                             uint16_t length, void *userdata), void *object)
 {
     con->onion_callback = onion_callback;
@@ -608,7 +608,7 @@ void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(vo
 
 /* Create new TCP connection to ip_port/public_key
  */
-TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public_key, const uint8_t *self_public_key,
+TCP_Client_Connection *new_TCP_connection(Env *env, IP_Port ip_port, const uint8_t *public_key, const uint8_t *self_public_key,
         const uint8_t *self_secret_key, TCP_Proxy_Info *proxy_info)
 {
     if (networking_at_startup() != 0) {
@@ -639,19 +639,19 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
     }
 
     if (!set_socket_nosigpipe(sock)) {
-        kill_sock(sock);
+        kill_sock(env, sock);
         return 0;
     }
 
     if (!(set_socket_nonblock(sock) && connect_sock_to(sock, ip_port, proxy_info))) {
-        kill_sock(sock);
+        kill_sock(env, sock);
         return NULL;
     }
 
     TCP_Client_Connection *temp = (TCP_Client_Connection *)calloc(sizeof(TCP_Client_Connection), 1);
 
     if (temp == NULL) {
-        kill_sock(sock);
+        kill_sock(env, sock);
         return NULL;
     }
 
@@ -677,7 +677,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
             temp->status = TCP_CLIENT_CONNECTING;
 
             if (generate_handshake(temp) == -1) {
-                kill_sock(sock);
+                kill_sock(env, sock);
                 free(temp);
                 return NULL;
             }
@@ -693,7 +693,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
 /* return 0 on success
  * return -1 on failure
  */
-static int handle_TCP_client_packet(TCP_Client_Connection *conn, const uint8_t *data, uint16_t length, void *userdata)
+static int handle_TCP_client_packet(Env *env, TCP_Client_Connection *conn, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (length <= 1) {
         return -1;
@@ -817,7 +817,7 @@ static int handle_TCP_client_packet(TCP_Client_Connection *conn, const uint8_t *
             }
 
             if (conn->oob_data_callback) {
-                conn->oob_data_callback(conn->oob_data_callback_object, data + 1, data + 1 + CRYPTO_PUBLIC_KEY_SIZE,
+                conn->oob_data_callback(env, conn->oob_data_callback_object, data + 1, data + 1 + CRYPTO_PUBLIC_KEY_SIZE,
                                         length - (1 + CRYPTO_PUBLIC_KEY_SIZE), userdata);
             }
 
@@ -825,7 +825,7 @@ static int handle_TCP_client_packet(TCP_Client_Connection *conn, const uint8_t *
         }
 
         case TCP_PACKET_ONION_RESPONSE: {
-            conn->onion_callback(conn->onion_callback_object, data + 1, length - 1, userdata);
+            conn->onion_callback(env, conn->onion_callback_object, data + 1, length - 1, userdata);
             return 0;
         }
 
@@ -837,7 +837,7 @@ static int handle_TCP_client_packet(TCP_Client_Connection *conn, const uint8_t *
             uint8_t con_id = data[0] - NUM_RESERVED_PORTS;
 
             if (conn->data_callback) {
-                conn->data_callback(conn->data_callback_object, conn->connections[con_id].number, con_id, data + 1, length - 1,
+                conn->data_callback(env, conn->data_callback_object, conn->connections[con_id].number, con_id, data + 1, length - 1,
                                     userdata);
             }
         }
@@ -846,7 +846,7 @@ static int handle_TCP_client_packet(TCP_Client_Connection *conn, const uint8_t *
     return 0;
 }
 
-static int do_confirmed_TCP(TCP_Client_Connection *conn, void *userdata)
+static int do_confirmed_TCP(Env *env, TCP_Client_Connection *conn, void *userdata)
 {
     client_send_pending_data(conn);
     tcp_send_ping_response(conn);
@@ -879,7 +879,7 @@ static int do_confirmed_TCP(TCP_Client_Connection *conn, void *userdata)
             break;
         }
 
-        if (handle_TCP_client_packet(conn, packet, len, userdata) == -1) {
+        if (handle_TCP_client_packet(env, conn, packet, len, userdata) == -1) {
             conn->status = TCP_CLIENT_DISCONNECTED;
             break;
         }
@@ -890,7 +890,7 @@ static int do_confirmed_TCP(TCP_Client_Connection *conn, void *userdata)
 
 /* Run the TCP connection
  */
-void do_TCP_connection(TCP_Client_Connection *TCP_connection, void *userdata)
+void do_TCP_connection(Env *env, TCP_Client_Connection *TCP_connection, void *userdata)
 {
     unix_time_update();
 
@@ -968,7 +968,7 @@ void do_TCP_connection(TCP_Client_Connection *TCP_connection, void *userdata)
     }
 
     if (TCP_connection->status == TCP_CLIENT_CONFIRMED) {
-        do_confirmed_TCP(TCP_connection, userdata);
+        do_confirmed_TCP(env, TCP_connection, userdata);
     }
 
     if (TCP_connection->kill_at <= unix_time()) {
@@ -978,14 +978,14 @@ void do_TCP_connection(TCP_Client_Connection *TCP_connection, void *userdata)
 
 /* Kill the TCP connection
  */
-void kill_TCP_connection(TCP_Client_Connection *TCP_connection)
+void kill_TCP_connection(Env *env, TCP_Client_Connection *TCP_connection)
 {
     if (TCP_connection == NULL) {
         return;
     }
 
     wipe_priority_list(TCP_connection);
-    kill_sock(TCP_connection->sock);
+    kill_sock(env, TCP_connection->sock);
     crypto_memzero(TCP_connection, sizeof(TCP_Client_Connection));
     free(TCP_connection);
 }

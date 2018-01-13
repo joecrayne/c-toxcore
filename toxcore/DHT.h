@@ -166,7 +166,7 @@ typedef struct {
 
     uint16_t lock_count;
     struct {
-        void (*ip_callback)(void *, int32_t, IP_Port);
+        void (*ip_callback)(Env *env, void *, int32_t, IP_Port);
         void *data;
         int32_t number;
     } callbacks[DHT_FRIEND_MAX_LOCKS];
@@ -217,7 +217,7 @@ typedef struct {
 
 /*----------------------------------------------------------------------------------*/
 
-typedef int (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, const uint8_t *source_pubkey,
+typedef int (*cryptopacket_handler_callback)(Env *env, void *object, IP_Port ip_port, const uint8_t *source_pubkey,
         const uint8_t *data, uint16_t len, void *userdata);
 
 typedef struct {
@@ -296,7 +296,7 @@ void DHT_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, con
  *  return 0 if success.
  *  return -1 if failure (friends list is full).
  */
-int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void *data, int32_t number, IP_Port),
+int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(Env *env, void *data, int32_t number, IP_Port),
                   void *data, int32_t number, uint16_t *lock_count);
 
 /* Delete a friend from the friends list.
@@ -443,6 +443,6 @@ int DHT_isconnected(const DHT *dht);
 int DHT_non_lan_connected(const DHT *dht);
 
 
-uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
+uint32_t addto_lists(Env *env, DHT *dht, IP_Port ip_port, const uint8_t *public_key);
 
 #endif

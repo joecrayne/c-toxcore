@@ -136,7 +136,7 @@ typedef struct {
     void *connection_status_callback_object;
     int connection_status_callback_id;
 
-    int (*connection_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
+    int (*connection_data_callback)(Env *env, void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
     void *connection_data_callback_object;
     int connection_data_callback_id;
 
@@ -275,7 +275,7 @@ int connection_status_handler(const Net_Crypto *c, int crypt_connection_id,
  * return -1 on failure.
  * return 0 on success.
  */
-int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*connection_data_callback)(void *object,
+int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*connection_data_callback)(Env *env, void *object,
                             int id, const uint8_t *data, uint16_t length, void *userdata), void *object, int id);
 
 
@@ -348,14 +348,14 @@ int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t
  * return 0 if it was added.
  * return -1 if it wasn't.
  */
-int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, const uint8_t *public_key);
+int add_tcp_relay_peer(Env *env, Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, const uint8_t *public_key);
 
 /* Add a tcp relay to the array.
  *
  * return 0 if it was added.
  * return -1 if it wasn't.
  */
-int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key);
+int add_tcp_relay(Env *env, Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key);
 
 /* Return a random TCP connection number for use in send_tcp_onion_request.
  *
@@ -412,16 +412,16 @@ void load_secret_key(Net_Crypto *c, const uint8_t *sk);
 /* Create new instance of Net_Crypto.
  *  Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(Logger *log, DHT *dht, TCP_Proxy_Info *proxy_info);
+Net_Crypto *new_net_crypto(Env *env, Logger *log, DHT *dht, TCP_Proxy_Info *proxy_info);
 
 /* return the optimal interval in ms for running do_net_crypto.
  */
 uint32_t crypto_run_interval(const Net_Crypto *c);
 
 /* Main loop. */
-void do_net_crypto(Net_Crypto *c, void *userdata);
+void do_net_crypto(Env *env, Net_Crypto *c, void *userdata);
 
-void kill_net_crypto(Net_Crypto *c);
+void kill_net_crypto(Env *env, Net_Crypto *c);
 
 
 

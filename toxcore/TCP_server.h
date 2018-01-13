@@ -124,16 +124,16 @@ size_t tcp_server_listen_count(const TCP_Server *tcp_server);
 
 /* Create new TCP server instance.
  */
-TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports, const uint8_t *secret_key,
+TCP_Server *new_TCP_server(Env *env, uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports, const uint8_t *secret_key,
                            Onion *onion);
 
 /* Run the TCP_server
  */
-void do_TCP_server(TCP_Server *TCP_server);
+void do_TCP_server(Env *env, TCP_Server *TCP_server);
 
 /* Kill the TCP server
  */
-void kill_TCP_server(TCP_Server *TCP_server);
+void kill_TCP_server(Env *env, TCP_Server *TCP_server);
 
 /* return the amount of data in the tcp recv buffer.
  * return 0 on failure.

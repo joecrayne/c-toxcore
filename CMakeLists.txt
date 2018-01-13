@@ -203,6 +203,8 @@ set(toxcrypto_PKGCONFIG_REQUIRES ${toxcrypto_PKGCONFIG_REQUIRES} libsodium)
 # LAYER 2: Basic networking
 # -------------------------
 add_submodule(toxcore toxnetwork
+  toxcore/env.c
+  toxcore/env.h
   toxcore/logger.c
   toxcore/logger.h
   toxcore/network.c

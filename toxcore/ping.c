@@ -134,7 +134,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *public_key
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
-static int handle_ping_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_ping_request(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     DHT       *dht = (DHT *)object;
     int        rc;
@@ -177,7 +177,7 @@ static int handle_ping_request(void *object, IP_Port source, const uint8_t *pack
     return 0;
 }
 
-static int handle_ping_response(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_ping_response(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     DHT      *dht = (DHT *)object;
     int       rc;
@@ -232,7 +232,7 @@ static int handle_ping_response(void *object, IP_Port source, const uint8_t *pac
         return 1;
     }
 
-    addto_lists(dht, source, packet + 1);
+    addto_lists(env, dht, source, packet + 1);
     return 0;
 }
 

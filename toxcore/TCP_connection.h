@@ -126,12 +126,12 @@ int tcp_send_oob_packet(TCP_Connections *tcp_c, unsigned int tcp_connections_num
 
 /* Set the callback for TCP data packets.
  */
-void set_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_data_callback)(void *object, int id,
+void set_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_data_callback)(Env *env, void *object, int id,
                                         const uint8_t *data, uint16_t length, void *userdata), void *object);
 
 /* Set the callback for TCP onion packets.
  */
-void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_onion_callback)(void *object,
+void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_onion_callback)(Env *env, void *object,
         const uint8_t *data, uint16_t length, void *userdata), void *object);
 
 /* Set the callback for TCP oob data packets.
@@ -190,14 +190,14 @@ int add_tcp_number_relay_connection(TCP_Connections *tcp_c, int connections_numb
  * return 0 on success.
  * return -1 on failure.
  */
-int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_Port ip_port, const uint8_t *relay_pk);
+int add_tcp_relay_connection(Env *env, TCP_Connections *tcp_c, int connections_number, IP_Port ip_port, const uint8_t *relay_pk);
 
 /* Add a TCP relay to the instance.
  *
  * return 0 on success.
  * return -1 on failure.
  */
-int add_tcp_relay_global(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t *relay_pk);
+int add_tcp_relay_global(Env *env, TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t *relay_pk);
 
 /* Copy a maximum of max_num TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
@@ -216,8 +216,8 @@ unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_
  */
 TCP_Connections *new_tcp_connections(const uint8_t *secret_key, TCP_Proxy_Info *proxy_info);
 
-void do_tcp_connections(TCP_Connections *tcp_c, void *userdata);
-void kill_tcp_connections(TCP_Connections *tcp_c);
+void do_tcp_connections(Env *env, TCP_Connections *tcp_c, void *userdata);
+void kill_tcp_connections(Env *env, TCP_Connections *tcp_c);
 
 #endif
 

@@ -322,7 +322,7 @@ int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data,
     return 0;
 }
 
-static int handle_send_initial(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_send_initial(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -391,7 +391,7 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port
     return 0;
 }
 
-static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_send_1(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -447,7 +447,7 @@ static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, ui
     return 0;
 }
 
-static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_send_2(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -502,7 +502,7 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
 }
 
 
-static int handle_recv_3(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_recv_3(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -543,7 +543,7 @@ static int handle_recv_3(void *object, IP_Port source, const uint8_t *packet, ui
     return 0;
 }
 
-static int handle_recv_2(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_recv_2(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -584,7 +584,7 @@ static int handle_recv_2(void *object, IP_Port source, const uint8_t *packet, ui
     return 0;
 }
 
-static int handle_recv_1(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_recv_1(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 

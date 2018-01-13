@@ -170,7 +170,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
     Messenger *m = new_messenger(&m_options, &m_error);
 
     if (!new_groupchats(m)) {
-        kill_messenger(m);
+        kill_messenger(env, m);
 
         if (m_error == MESSENGER_ERROR_PORT) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
@@ -204,7 +204,7 @@ void tox_kill(Tox *tox)
 
     Messenger *m = tox;
     kill_groupchats((Group_Chats *)m->conferences_object);
-    kill_messenger(m);
+    kill_messenger(env, m);
 }
 
 size_t tox_get_savedata_size(const Tox *tox)
@@ -293,7 +293,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
         root[i].port = net_htons(port);
 
         Messenger *m = tox;
-        add_tcp_relay(m->net_crypto, root[i], public_key);
+        add_tcp_relay(env, m->net_crypto, root[i], public_key);
     }
 
     net_freeipport(root);
@@ -340,7 +340,7 @@ uint32_t tox_iteration_interval(const Tox *tox)
 void tox_iterate(Tox *tox, void *user_data)
 {
     Messenger *m = tox;
-    do_messenger(m, user_data);
+    do_messenger(env, m, user_data);
     do_groupchats((Group_Chats *)m->conferences_object, user_data);
 }
 

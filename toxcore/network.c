@@ -218,13 +218,9 @@ int sock_valid(Socket sock)
 
 /* Close the socket.
  */
-void kill_sock(Socket sock)
+void kill_sock(Env *env, Socket sock)
 {
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-    closesocket(sock);
-#else
-    close(sock);
-#endif
+    env->closesocket(sock);
 }
 
 /* Set socket as nonblocking
@@ -541,7 +537,7 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
     net->packethandlers[byte].object = object;
 }
 
-void networking_poll(Networking_Core *net, void *userdata)
+void networking_poll(Env *env, Networking_Core *net, void *userdata)
 {
     if (net->family == 0) { /* Socket not initialized */
         return;
@@ -563,7 +559,7 @@ void networking_poll(Networking_Core *net, void *userdata)
             continue;
         }
 
-        net->packethandlers[data[0]].function(net->packethandlers[data[0]].object, ip_port, data, length, userdata);
+        net->packethandlers[data[0]].function(env, net->packethandlers[data[0]].object, ip_port, data, length, userdata);
     }
 }
 
@@ -619,9 +615,9 @@ static void at_shutdown(void)
 /* Initialize networking.
  * Added for reverse compatibility with old new_networking calls.
  */
-Networking_Core *new_networking(Logger *log, IP ip, uint16_t port)
+Networking_Core *new_networking(Env *env, Logger *log, IP ip, uint16_t port)
 {
-    return new_networking_ex(log, ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), 0);
+    return new_networking_ex(env, log, ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), 0);
 }
 
 /* Initialize networking.
@@ -634,7 +630,7 @@ Networking_Core *new_networking(Logger *log, IP ip, uint16_t port)
  *
  * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */
-Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error)
+Networking_Core *new_networking_ex(Env *env, Logger *log, IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error)
 {
     /* If both from and to are 0, use default port range
      * If one is 0 and the other is non-0, use the non-0 value as only port
@@ -705,7 +701,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
 
     /* iOS UDP sockets are weird and apparently can SIGPIPE */
     if (!set_socket_nosigpipe(temp->sock)) {
-        kill_networking(temp);
+        kill_networking(env, temp);
 
         if (error) {
             *error = 1;
@@ -716,7 +712,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
 
     /* Set socket nonblocking. */
     if (!set_socket_nonblock(temp->sock)) {
-        kill_networking(temp);
+        kill_networking(env, temp);
 
         if (error) {
             *error = 1;
@@ -832,7 +828,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
     LOGGER_ERROR(log, "Failed to bind socket: %u, %s IP: %s port_from: %u port_to: %u", errno, strerror(errno),
                  ip_ntoa(&ip, ip_str, sizeof(ip_str)), port_from, port_to);
 
-    kill_networking(temp);
+    kill_networking(env, temp);
 
     if (error) {
         *error = 1;
@@ -856,14 +852,14 @@ Networking_Core *new_networking_no_udp(Logger *log)
 }
 
 /* Function to cleanup networking stuff. */
-void kill_networking(Networking_Core *net)
+void kill_networking(Env *env, Networking_Core *net)
 {
     if (!net) {
         return;
     }
 
     if (net->family != 0) { /* Socket not initialized */
-        kill_sock(net->sock);
+        kill_sock(env, net->sock);
     }
 
     free(net);

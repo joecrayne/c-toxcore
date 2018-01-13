@@ -334,7 +334,7 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const ui
     return in_entries(onion_a, public_key);
 }
 
-static int handle_announce_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_announce_request(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion_Announce *onion_a = (Onion_Announce *)object;
 
@@ -433,7 +433,7 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
     return 0;
 }
 
-static int handle_data_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_data_request(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion_Announce *onion_a = (Onion_Announce *)object;
 

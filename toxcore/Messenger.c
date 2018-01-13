@@ -1915,7 +1915,7 @@ static int friend_already_added(const uint8_t *real_pk, void *data)
 }
 
 /* Run this at startup. */
-Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
+Messenger *new_messenger(Env *env, Messenger_Options *options, unsigned int *error)
 {
     if (!options) {
         return NULL;
@@ -1950,7 +1950,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     } else {
         IP ip;
         ip_init(&ip, options->ipv6enabled);
-        m->net = new_networking_ex(log, ip, options->port_range[0], options->port_range[1], &net_err);
+        m->net = new_networking_ex(env, log, ip, options->port_range[0], options->port_range[1], &net_err);
     }
 
     if (m->net == NULL) {
@@ -1966,15 +1966,15 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     m->dht = new_DHT(m->log, m->net, options->hole_punching_enabled);
 
     if (m->dht == NULL) {
-        kill_networking(m->net);
+        kill_networking(env, m->net);
         free(m);
         return NULL;
     }
 
-    m->net_crypto = new_net_crypto(m->log, m->dht, &options->proxy_info);
+    m->net_crypto = new_net_crypto(env, m->log, m->dht, &options->proxy_info);
 
     if (m->net_crypto == NULL) {
-        kill_networking(m->net);
+        kill_networking(env, m->net);
         kill_DHT(m->dht);
         free(m);
         return NULL;
@@ -1990,24 +1990,24 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
-        kill_net_crypto(m->net_crypto);
+        kill_net_crypto(env, m->net_crypto);
         kill_DHT(m->dht);
-        kill_networking(m->net);
+        kill_networking(env, m->net);
         free(m);
         return NULL;
     }
 
     if (options->tcp_server_port) {
-        m->tcp_server = new_TCP_server(options->ipv6enabled, 1, &options->tcp_server_port, m->dht->self_secret_key, m->onion);
+        m->tcp_server = new_TCP_server(env, options->ipv6enabled, 1, &options->tcp_server_port, m->dht->self_secret_key, m->onion);
 
         if (m->tcp_server == NULL) {
             kill_friend_connections(m->fr_c);
             kill_onion(m->onion);
             kill_onion_announce(m->onion_a);
             kill_onion_client(m->onion_c);
-            kill_net_crypto(m->net_crypto);
+            kill_net_crypto(env, m->net_crypto);
             kill_DHT(m->dht);
-            kill_networking(m->net);
+            kill_networking(env, m->net);
             free(m);
 
             if (error) {
@@ -2033,7 +2033,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 }
 
 /* Run this before closing shop. */
-void kill_messenger(Messenger *m)
+void kill_messenger(Env *env, Messenger *m)
 {
     if (!m) {
         return;
@@ -2042,16 +2042,16 @@ void kill_messenger(Messenger *m)
     uint32_t i;
 
     if (m->tcp_server) {
-        kill_TCP_server(m->tcp_server);
+        kill_TCP_server(env, m->tcp_server);
     }
 
     kill_friend_connections(m->fr_c);
     kill_onion(m->onion);
     kill_onion_announce(m->onion_a);
     kill_onion_client(m->onion_c);
-    kill_net_crypto(m->net_crypto);
+    kill_net_crypto(env, m->net_crypto);
     kill_DHT(m->dht);
-    kill_networking(m->net);
+    kill_networking(env, m->net);
 
     for (i = 0; i < m->numfriends; ++i) {
         clear_receipts(m, i);
@@ -2511,7 +2511,7 @@ uint32_t messenger_run_interval(const Messenger *m)
 }
 
 /* The main loop that needs to be run at least 20 times per second. */
-void do_messenger(Messenger *m, void *userdata)
+void do_messenger(Env *env, Messenger *m, void *userdata)
 {
     // Add the TCP relays, but only if this is the first time calling do_messenger
     if (m->has_added_relays == 0) {
@@ -2520,7 +2520,7 @@ void do_messenger(Messenger *m, void *userdata)
         int i;
 
         for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
-            add_tcp_relay(m->net_crypto, m->loaded_relays[i].ip_port, m->loaded_relays[i].public_key);
+            add_tcp_relay(env, m->net_crypto, m->loaded_relays[i].ip_port, m->loaded_relays[i].public_key);
         }
 
         if (m->tcp_server) {
@@ -2529,7 +2529,7 @@ void do_messenger(Messenger *m, void *userdata)
             local_ip_port.port = m->options.tcp_server_port;
             local_ip_port.ip.family = TOX_AF_INET;
             local_ip_port.ip.ip4 = get_ip4_loopback();
-            add_tcp_relay(m->net_crypto, local_ip_port,
+            add_tcp_relay(env, m->net_crypto, local_ip_port,
                           tcp_server_public_key(m->tcp_server));
         }
     }
@@ -2537,17 +2537,17 @@ void do_messenger(Messenger *m, void *userdata)
     unix_time_update();
 
     if (!m->options.udp_disabled) {
-        networking_poll(m->net, userdata);
+        networking_poll(env, m->net, userdata);
         do_DHT(m->dht);
     }
 
     if (m->tcp_server) {
-        do_TCP_server(m->tcp_server);
+        do_TCP_server(env, m->tcp_server);
     }
 
-    do_net_crypto(m->net_crypto, userdata);
+    do_net_crypto(env, m->net_crypto, userdata);
     do_onion_client(m->onion_c);
-    do_friend_connections(m->fr_c, userdata);
+    do_friend_connections(env, m->fr_c, userdata);
     do_friends(m, userdata);
     connection_status_cb(m, userdata);
 

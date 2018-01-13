@@ -1052,7 +1052,7 @@ static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_k
  *
  *  returns 1+ if the item is used in any list, 0 else
  */
-uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
+uint32_t addto_lists(Env *env, DHT *dht, IP_Port ip_port, const uint8_t *public_key)
 {
     uint32_t used = 0;
 
@@ -1098,7 +1098,7 @@ uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
 
     for (uint32_t i = 0; i < friend_foundip->lock_count; ++i) {
         if (friend_foundip->callbacks[i].ip_callback) {
-            friend_foundip->callbacks[i].ip_callback(friend_foundip->callbacks[i].data,
+            friend_foundip->callbacks[i].ip_callback(env, friend_foundip->callbacks[i].data,
                     friend_foundip->callbacks[i].number, ip_port);
         }
     }
@@ -1255,7 +1255,7 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
 
 #define CRYPTO_NODE_SIZE (CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t))
 
-static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_getnodes(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     if (length != (CRYPTO_SIZE + CRYPTO_MAC_SIZE + sizeof(uint64_t))) {
         return 1;
@@ -1318,7 +1318,7 @@ static uint8_t sent_getnode_to_node(DHT *dht, const uint8_t *public_key, IP_Port
 static int send_hardening_getnode_res(const DHT *dht, const Node_format *sendto, const uint8_t *queried_client_id,
                                       const uint8_t *nodes_data, uint16_t nodes_data_length);
 
-static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *packet, uint16_t length,
+static int handle_sendnodes_core(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length,
                                  Node_format *plain_nodes, uint16_t size_plain_nodes, uint32_t *num_nodes_out)
 {
     DHT *dht = (DHT *)object;
@@ -1381,7 +1381,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
     }
 
     /* store the address the *request* was sent to */
-    addto_lists(dht, source, packet + 1);
+    addto_lists(env, dht, source, packet + 1);
 
     *num_nodes_out = num_nodes;
 
@@ -1389,13 +1389,13 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
     return 0;
 }
 
-static int handle_sendnodes_ipv6(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_sendnodes_ipv6(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     DHT *dht = (DHT *)object;
     Node_format plain_nodes[MAX_SENT_NODES];
     uint32_t num_nodes;
 
-    if (handle_sendnodes_core(object, source, packet, length, plain_nodes, MAX_SENT_NODES, &num_nodes)) {
+    if (handle_sendnodes_core(env, object, source, packet, length, plain_nodes, MAX_SENT_NODES, &num_nodes)) {
         return 1;
     }
 
@@ -1416,7 +1416,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, const uint8_t *pa
 /*----------------------------------------------------------------------------------*/
 /*------------------------END of packet handling functions--------------------------*/
 
-int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void *data, int32_t number, IP_Port),
+int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(Env *env, void *data, int32_t number, IP_Port),
                   void *data, int32_t number, uint16_t *lock_count)
 {
     uint32_t friend_num = index_of_friend_pk(dht->friends_list, dht->num_friends, public_key);
@@ -1957,7 +1957,7 @@ static int send_NATping(DHT *dht, const uint8_t *public_key, uint64_t ping_id, u
 }
 
 /* Handle a received ping request for. */
-static int handle_NATping(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,
+static int handle_NATping(Env *env, void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,
                           uint16_t length, void *userdata)
 {
     if (length != sizeof(uint64_t) + 1) {
@@ -2265,7 +2265,7 @@ static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num)
 #define HARDEN_TIMEOUT 1200
 
 /* Handle a received hardening packet */
-static int handle_hardening(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,
+static int handle_hardening(Env *env, void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,
                             uint16_t length, void *userdata)
 {
     DHT *dht = (DHT *)object;
@@ -2500,7 +2500,7 @@ void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_c
     dht->cryptopackethandlers[byte].object = object;
 }
 
-static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int cryptopacket_handle(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     DHT *dht = (DHT *)object;
 
@@ -2526,7 +2526,7 @@ static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *pack
             return 1;
         }
 
-        return dht->cryptopackethandlers[number].function(dht->cryptopackethandlers[number].object, source, public_key,
+        return dht->cryptopackethandlers[number].function(env, dht->cryptopackethandlers[number].object, source, public_key,
                 data, len, userdata);
     }
 

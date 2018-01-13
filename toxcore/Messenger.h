@@ -734,15 +734,15 @@ enum {
  *
  *  if error is not NULL it will be set to one of the values in the enum above.
  */
-Messenger *new_messenger(Messenger_Options *options, unsigned int *error);
+Messenger *new_messenger(Env *env, Messenger_Options *options, unsigned int *error);
 
 /* Run this before closing shop
  * Free all datastructures.
  */
-void kill_messenger(Messenger *m);
+void kill_messenger(Env *env, Messenger *m);
 
 /* The main loop that needs to be run at least 20 times per second. */
-void do_messenger(Messenger *m, void *userdata);
+void do_messenger(Env *env, Messenger *m, void *userdata);
 
 /* Return the time in milliseconds before do_messenger() should be called again
  * for optimal performance.

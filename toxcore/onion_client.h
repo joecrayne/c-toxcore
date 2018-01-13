@@ -121,7 +121,7 @@ typedef struct {
     Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
     uint8_t last_pinged_index;
 
-    int (*tcp_relay_node_callback)(void *object, uint32_t number, IP_Port ip_port, const uint8_t *public_key);
+    int (*tcp_relay_node_callback)(Env *env, void *object, uint32_t number, IP_Port ip_port, const uint8_t *public_key);
     void *tcp_relay_node_callback_object;
     uint32_t tcp_relay_node_callback_number;
 
@@ -132,7 +132,7 @@ typedef struct {
     uint32_t run_count;
 } Onion_Friend;
 
-typedef int (*oniondata_handler_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data,
+typedef int (*oniondata_handler_callback)(Env *env, void *object, const uint8_t *source_pubkey, const uint8_t *data,
         uint16_t len, void *userdata);
 
 typedef struct {
@@ -238,7 +238,7 @@ int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_p
  * return -1 on failure.
  * return 0 on success.
  */
-int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_relay_node_callback)(void *object,
+int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_relay_node_callback)(Env *env, void *object,
                            uint32_t number, IP_Port ip_port, const uint8_t *public_key), void *object, uint32_t number);
 
 

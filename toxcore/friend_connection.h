@@ -102,7 +102,7 @@ typedef struct {
     Friend_Conn *conns;
     uint32_t num_cons;
 
-    int (*fr_request_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t len,
+    int (*fr_request_callback)(Env *env, void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t len,
                                void *userdata);
     void *fr_request_object;
 
@@ -146,7 +146,7 @@ void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *
  * return -1 on failure.
  * return 0 on success.
  */
-int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_port, const uint8_t *public_key);
+int friend_add_tcp_relay(Env *env, Friend_Connections *fr_c, int friendcon_id, IP_Port ip_port, const uint8_t *public_key);
 
 /* Set the callbacks for the friend connection.
  * index is the index (0 to (MAX_FRIEND_CONNECTION_CALLBACKS - 1)) we want the callback to set in the array.
@@ -195,14 +195,14 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
  *
  * This function will be called every time a friend request is received.
  */
-void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(void *, const uint8_t *,
+void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(Env *env, void *, const uint8_t *,
                                  const uint8_t *, uint16_t, void *), void *object);
 
 /* Create new friend_connections instance. */
 Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_discovery_enabled);
 
 /* main friend_connections loop. */
-void do_friend_connections(Friend_Connections *fr_c, void *userdata);
+void do_friend_connections(Env *env, Friend_Connections *fr_c, void *userdata);
 
 /* Free everything related with friend_connections. */
 void kill_friend_connections(Friend_Connections *fr_c);

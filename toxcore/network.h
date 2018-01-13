@@ -32,6 +32,7 @@
 
 #include "ccompat.h"
 #include "logger.h"
+#include "env.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -65,7 +66,6 @@
 
 typedef short Family;
 
-typedef int Socket;
 Socket net_socket(int domain, int type, int protocol);
 
 #define MAX_UDP_PACKET_SIZE 2048
@@ -300,7 +300,7 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
  * Packet data is put into data.
  * Packet length is put into length.
  */
-typedef int (*packet_handler_callback)(void *object, IP_Port ip_port, const uint8_t *data, uint16_t len,
+typedef int (*packet_handler_callback)(Env *env, void *object, IP_Port ip_port, const uint8_t *data, uint16_t len,
                                        void *userdata);
 
 typedef struct Networking_Core Networking_Core;
@@ -324,7 +324,7 @@ int sock_valid(Socket sock);
 
 /* Close the socket.
  */
-void kill_sock(Socket sock);
+void kill_sock(Env *env, Socket sock);
 
 /* Set socket as nonblocking
  *
@@ -366,7 +366,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);
 
 /* Call this several times a second. */
-void networking_poll(Networking_Core *net, void *userdata);
+void networking_poll(Env *env, Networking_Core *net, void *userdata);
 
 /* Connect a socket to the address specified by the ip_port. */
 int net_connect(Socket sock, IP_Port ip_port);
@@ -403,11 +403,11 @@ int bind_to_port(Socket sock, int family, uint16_t port);
  *
  * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */
-Networking_Core *new_networking(Logger *log, IP ip, uint16_t port);
-Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error);
+Networking_Core *new_networking(Env *env, Logger *log, IP ip, uint16_t port);
+Networking_Core *new_networking_ex(Env *env, Logger *log, IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error);
 Networking_Core *new_networking_no_udp(Logger *log);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
-void kill_networking(Networking_Core *net);
+void kill_networking(Env *env, Networking_Core *net);
 
 #endif

@@ -706,7 +706,7 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, const Node_for
     return 0;
 }
 
-static int handle_announce_response(void *object, IP_Port source, const uint8_t *packet, uint16_t length,
+static int handle_announce_response(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length,
                                     void *userdata)
 {
     Onion_Client *onion_c = (Onion_Client *)object;
@@ -774,7 +774,7 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
 
 #define DATA_IN_RESPONSE_MIN_SIZE ONION_DATA_IN_RESPONSE_MIN_SIZE
 
-static int handle_data_response(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_data_response(Env *env, void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion_Client *onion_c = (Onion_Client *)object;
 
@@ -807,13 +807,13 @@ static int handle_data_response(void *object, IP_Port source, const uint8_t *pac
         return 1;
     }
 
-    return onion_c->Onion_Data_Handlers[plain[0]].function(onion_c->Onion_Data_Handlers[plain[0]].object, temp_plain, plain,
+    return onion_c->Onion_Data_Handlers[plain[0]].function(env, onion_c->Onion_Data_Handlers[plain[0]].object, temp_plain, plain,
             SIZEOF_VLA(plain), userdata);
 }
 
 #define DHTPK_DATA_MIN_LENGTH (1 + sizeof(uint64_t) + CRYPTO_PUBLIC_KEY_SIZE)
 #define DHTPK_DATA_MAX_LENGTH (DHTPK_DATA_MIN_LENGTH + sizeof(Node_format)*MAX_SENT_NODES)
-static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t length,
+static int handle_dhtpk_announce(Env *env, void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t length,
                                  void *userdata)
 {
     Onion_Client *onion_c = (Onion_Client *)object;
@@ -872,7 +872,7 @@ static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, con
                 if (onion_c->friends_list[friend_num].tcp_relay_node_callback) {
                     void *obj = onion_c->friends_list[friend_num].tcp_relay_node_callback_object;
                     uint32_t number = onion_c->friends_list[friend_num].tcp_relay_node_callback_number;
-                    onion_c->friends_list[friend_num].tcp_relay_node_callback(obj, number, nodes[i].ip_port, nodes[i].public_key);
+                    onion_c->friends_list[friend_num].tcp_relay_node_callback(env, obj, number, nodes[i].ip_port, nodes[i].public_key);
                 }
             }
         }
@@ -881,7 +881,7 @@ static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, con
     return 0;
 }
 
-static int handle_tcp_onion(void *object, const uint8_t *data, uint16_t length, void *userdata)
+static int handle_tcp_onion(Env *env, void *object, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (length == 0) {
         return 1;
@@ -891,11 +891,11 @@ static int handle_tcp_onion(void *object, const uint8_t *data, uint16_t length, 
     ip_port.ip.family = TCP_FAMILY;
 
     if (data[0] == NET_PACKET_ANNOUNCE_RESPONSE) {
-        return handle_announce_response(object, ip_port, data, length, userdata);
+        return handle_announce_response(env, object, ip_port, data, length, userdata);
     }
 
     if (data[0] == NET_PACKET_ONION_DATA_RESPONSE) {
-        return handle_data_response(object, ip_port, data, length, userdata);
+        return handle_data_response(env, object, ip_port, data, length, userdata);
     }
 
     return 1;
@@ -1021,7 +1021,7 @@ static int send_dht_dhtpk(const Onion_Client *onion_c, int friend_num, const uin
     return route_tofriend(onion_c->dht, onion_c->friends_list[friend_num].dht_public_key, packet, len);
 }
 
-static int handle_dht_dhtpk(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,
+static int handle_dht_dhtpk(Env *env, void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,
                             uint16_t length, void *userdata)
 {
     Onion_Client *onion_c = (Onion_Client *)object;
@@ -1047,7 +1047,7 @@ static int handle_dht_dhtpk(void *object, IP_Port source, const uint8_t *source_
         return 1;
     }
 
-    return handle_dhtpk_announce(onion_c, packet, plain, len, userdata);
+    return handle_dhtpk_announce(env, onion_c, packet, plain, len, userdata);
 }
 /* Send the packets to tell our friends what our DHT public key is.
  *
@@ -1228,7 +1228,7 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
  * return -1 on failure.
  * return 0 on success.
  */
-int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_relay_node_callback)(void *object,
+int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_relay_node_callback)(Env *env, void *object,
                            uint32_t number, IP_Port ip_port, const uint8_t *public_key), void *object, uint32_t number)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends) {
