@@ -1152,6 +1152,7 @@ static void print_groupnamelistchange(Tox *m, uint32_t groupnumber, uint32_t pee
                                       TOX_CONFERENCE_STATE_CHANGE change,
                                       void *userdata)
 {
+#if 0
     char msg[256];
 
     if (change == TOX_CONFERENCE_STATE_CHANGE_PEER_JOIN) {
@@ -1198,6 +1199,7 @@ static void print_groupnamelistchange(Tox *m, uint32_t groupnumber, uint32_t pee
         new_lines(msg);
         print_groupchatpeers(m, groupnumber);
     }
+#endif
 }
 static void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t type,
                                 uint64_t file_size,

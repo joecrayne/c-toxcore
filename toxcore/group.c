@@ -3671,9 +3671,18 @@ void send_name_all_groups(Group_Chats *g_c)
     }
 }
 
+static uint32_t saved_conferences_size(const Messenger *m);
+static void conferences_save(const Messenger *m, uint8_t *data);
+static int conferences_load(Messenger *m, const uint8_t *data, uint32_t length);
+
 /* Create new groupchat instance. */
 Group_Chats *new_groupchats(Messenger *m)
 {
+    // HACK HACK HACK for Messenger.c.
+    saved_conferences_size_ptr = saved_conferences_size;
+    conferences_save_ptr = conferences_save;
+    conferences_load_ptr = conferences_load;
+
     if (!m) {
         return NULL;
     }
@@ -3800,7 +3809,7 @@ uint32_t copy_chatlist(const Group_Chats *g_c, uint32_t *out_list, uint32_t list
     return ret;
 }
 
-uint32_t saved_conferences_size(const Messenger *m)
+static uint32_t saved_conferences_size(const Messenger *m)
 {
     Group_Chats *g_c = (Group_Chats *)m->conferences_object;
 
@@ -3834,7 +3843,7 @@ static void putbytes(uint8_t **out, const uint8_t *data, const uint8_t size)
     *out += size;
 }
 
-void conferences_save(const Messenger *m, uint8_t *data)
+static void conferences_save(const Messenger *m, uint8_t *data)
 {
     Group_Chats *g_c = (Group_Chats *)m->conferences_object;
 
@@ -3875,7 +3884,7 @@ void conferences_save(const Messenger *m, uint8_t *data)
     }
 }
 
-int conferences_load(Messenger *m, const uint8_t *data, uint32_t length)
+static int conferences_load(Messenger *m, const uint8_t *data, uint32_t length)
 {
     if (length < sizeof(uint16_t)) {
         return -1;

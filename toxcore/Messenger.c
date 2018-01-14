@@ -141,7 +141,7 @@ static uint16_t address_checksum(const uint8_t *address, uint32_t len)
 void getaddress(const Messenger *m, uint8_t *address)
 {
     id_copy(address, m->net_crypto->self_public_key);
-    uint32_t nospam = get_nospam(&(m->fr));
+    uint32_t nospam = get_nospam(&m->fr);
     memcpy(address + CRYPTO_PUBLIC_KEY_SIZE, &nospam, sizeof(nospam));
     uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
     memcpy(address + CRYPTO_PUBLIC_KEY_SIZE + sizeof(nospam), &checksum, sizeof(checksum));
@@ -177,7 +177,7 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
         return FAERR_NOMEM;
     }
 
-    memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
+    memset(&m->friendlist[m->numfriends], 0, sizeof(Friend));
 
     int friendcon_id = new_friend_connection(m->fr_c, real_pk);
 
@@ -286,7 +286,7 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
     m->friendlist[ret].friendrequest_timeout = FRIENDREQUEST_TIMEOUT;
     memcpy(m->friendlist[ret].info, data, length);
     m->friendlist[ret].info_size = length;
-    memcpy(&(m->friendlist[ret].friendrequest_nospam), address + CRYPTO_PUBLIC_KEY_SIZE, sizeof(uint32_t));
+    memcpy(&m->friendlist[ret].friendrequest_nospam, address + CRYPTO_PUBLIC_KEY_SIZE, sizeof(uint32_t));
 
     return ret;
 }
@@ -415,7 +415,7 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     }
 
     clear_receipts(m, friendnumber);
-    remove_request_received(&(m->fr), m->friendlist[friendnumber].real_pk);
+    remove_request_received(&m->fr, m->friendlist[friendnumber].real_pk);
     friend_connection_callbacks(m->fr_c, m->friendlist[friendnumber].friendcon_id, MESSENGER_CALLBACK_INDEX, 0, 0, 0, 0, 0);
 
     if (friend_con_connected(m->fr_c, m->friendlist[friendnumber].friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
@@ -423,7 +423,7 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     }
 
     kill_friend_connection(m->fr_c, m->friendlist[friendnumber].friendcon_id);
-    memset(&(m->friendlist[friendnumber]), 0, sizeof(Friend));
+    memset(&m->friendlist[friendnumber], 0, sizeof(Friend));
     uint32_t i;
 
     for (i = m->numfriends; i != 0; --i) {
@@ -837,7 +837,7 @@ void m_callback_log(Messenger *m, logger_cb *function, void *context, void *user
 void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, size_t,
                               void *))
 {
-    callback_friendrequest(&(m->fr), (void (*)(void *, const uint8_t *, const uint8_t *, size_t, void *))function, m);
+    callback_friendrequest(&m->fr, (void (*)(void *, const uint8_t *, const uint8_t *, size_t, void *))function, m);
 }
 
 /* Set the function that will be executed when a message from a friend is received. */
@@ -1946,8 +1946,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     unsigned int net_err = 0;
 
     if (options->udp_disabled) {
-        /* this is the easiest way to completely disable UDP without changing too much code. */
-        m->net = (Networking_Core *)calloc(1, sizeof(Networking_Core));
+        m->net = new_networking_no_udp(log);
     } else {
         IP ip;
         ip_init(&ip, options->ipv6enabled);
@@ -2020,9 +2019,9 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     }
 
     m->options = *options;
-    friendreq_init(&(m->fr), m->fr_c);
-    set_nospam(&(m->fr), random_int());
-    set_filter_function(&(m->fr), &friend_already_added, m);
+    friendreq_init(&m->fr, m->fr_c);
+    set_nospam(&m->fr, random_int());
+    set_filter_function(&m->fr, &friend_already_added, m);
 
     m->lastdump = 0;
 
@@ -2878,7 +2877,7 @@ static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
             /* TODO(irungentoo): This is not a good way to do this. */
             uint8_t address[FRIEND_ADDRESS_SIZE];
             id_copy(address, temp.real_pk);
-            memcpy(address + CRYPTO_PUBLIC_KEY_SIZE, &(temp.friendrequest_nospam), sizeof(uint32_t));
+            memcpy(address + CRYPTO_PUBLIC_KEY_SIZE, &temp.friendrequest_nospam, sizeof(uint32_t));
             uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
             memcpy(address + CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint32_t), &checksum, sizeof(checksum));
             m_addfriend(m, address, temp.info, net_ntohs(temp.info_size));
@@ -2888,9 +2887,9 @@ static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
     return num;
 }
 
-uint32_t saved_conferences_size(const Messenger *m);
-void conferences_save(const Messenger *m, uint8_t *data);
-int conferences_load(Messenger *m, const uint8_t *data, uint32_t length);
+uint32_t (*saved_conferences_size_ptr)(const Messenger *m);
+void (*conferences_save_ptr)(const Messenger *m, uint8_t *data);
+int (*conferences_load_ptr)(Messenger *m, const uint8_t *data, uint32_t length);
 
 
 /*  return size of the messenger data (for saving) */
@@ -2906,7 +2905,7 @@ uint32_t messenger_size(const Messenger *m)
              + sizesubhead + 1                                 // status
              + sizesubhead + NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6) //TCP relays
              + sizesubhead + NUM_SAVED_PATH_NODES * packed_node_size(TCP_INET6) //saved path nodes
-             + sizesubhead + saved_conferences_size(m)           // old group chats
+             + sizesubhead + saved_conferences_size_ptr(m)     // old group chats
              + sizesubhead;
 }
 
@@ -2937,7 +2936,7 @@ void messenger_save(const Messenger *m, uint8_t *data)
     len = size32 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE;
     type = MESSENGER_STATE_TYPE_NOSPAMKEYS;
     data = messenger_save_subheader(data, len, type);
-    *(uint32_t *)data = get_nospam(&(m->fr));
+    *(uint32_t *)data = get_nospam(&m->fr);
     save_keys(m->net_crypto, data + size32);
     data += len;
 
@@ -2998,10 +2997,10 @@ void messenger_save(const Messenger *m, uint8_t *data)
         data += len;
     }
 
-    len = saved_conferences_size(m);
+    len = saved_conferences_size_ptr(m);
     type = MESSENGER_STATE_TYPE_CONFERENCES;
     data = messenger_save_subheader(data, len, type);
-    conferences_save(m, data);
+    conferences_save_ptr(m, data);
     data += len;
 
     messenger_save_subheader(data, 0, MESSENGER_STATE_TYPE_END);
@@ -3014,7 +3013,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
     switch (type) {
         case MESSENGER_STATE_TYPE_NOSPAMKEYS:
             if (length == CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE + sizeof(uint32_t)) {
-                set_nospam(&(m->fr), *(const uint32_t *)data);
+                set_nospam(&m->fr, *(const uint32_t *)data);
                 load_secret_key(m->net_crypto, (&data[sizeof(uint32_t)]) + CRYPTO_PUBLIC_KEY_SIZE);
 
                 if (public_key_cmp((&data[sizeof(uint32_t)]), m->net_crypto->self_public_key) != 0) {
@@ -3083,7 +3082,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
         }
 
         case MESSENGER_STATE_TYPE_CONFERENCES: {
-            /*int err =*/ conferences_load(m, data, length);
+            /*int err =*/ conferences_load_ptr(m, data, length);
             /* No need to do something special if err < 0
              * err < 0 just means that conferences data was damaged
              * and skipped
