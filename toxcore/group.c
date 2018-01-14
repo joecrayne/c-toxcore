@@ -1721,10 +1721,9 @@ static int group_ping_send(const Group_Chats *g_c, int groupnumber)
 
 static int nick_request_send(const Group_Chats *g_c, int groupnumber, int gid)
 {
-    uint8_t d[sizeof(uint16_t)];
-    uint16_t tmp = htons((uint16_t)gid);
-    d[0] = tmp & 0xFF;
-    d[1] = tmp >> 8;
+    uint8_t d[sizeof uint16_t];
+    d[0] = gid >> 8;
+    d[1] = gid >> 0xFF;
 
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_NICKNAME_ID, d, sizeof(d)) > 0) {
         return 0;
@@ -1861,8 +1860,9 @@ static void send_peer_nums(const Group_Chats *g_c, int32_t groupnumber, int frie
 
         memcpy(packet + ptr, peer->real_pk, CRYPTO_PUBLIC_KEY_SIZE);
         ptr += CRYPTO_PUBLIC_KEY_SIZE;
-        *(uint16_t *)(packet + ptr) = htons(peer->group_number);
-        ptr += sizeof(uint16_t);
+
+        packet[ptr++] = peer->group_number >> 8;
+        packet[ptr++] = peer->group_number & 0xFF;
     }
 
     if (ptr > 1) {
