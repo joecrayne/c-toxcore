@@ -32,6 +32,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -1045,9 +1046,14 @@ bool audio_bit_rate_invalid(uint32_t bit_rate)
 }
 bool video_bit_rate_invalid(uint32_t bit_rate)
 {
-    (void) bit_rate;
-    /* TODO(mannol): If anyone knows the answer to this one please fill it up */
-    return false;
+    /* https://www.webmproject.org/docs/webm-sdk/structvpx__codec__enc__cfg.html shows the following:
+     * unsigned int rc_target_bitrate
+     * the range of uint varies from platform to platform
+     * though, uint32_t should be large enough to store bitrates,
+     * we may want to prevent from passing overflowed bitrates to libvpx
+     * more in detail, it's the case where bit_rate is larger than uint, but smaller than uint32_t
+     */
+    return bit_rate > UINT_MAX;
 }
 bool invoke_call_state_callback(ToxAV *av, uint32_t friend_number, uint32_t state)
 {
