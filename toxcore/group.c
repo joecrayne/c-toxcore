@@ -1722,7 +1722,9 @@ static int group_ping_send(const Group_Chats *g_c, int groupnumber)
 static int nick_request_send(const Group_Chats *g_c, int groupnumber, int gid)
 {
     uint8_t d[sizeof(uint16_t)];
-    *(uint16_t *)d = htons((uint16_t)gid);
+    uint16_t tmp = htons((uint16_t)gid);
+    d[0] = tmp & 0xFF;
+    d[1] = tmp >> 8;
 
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_NICKNAME_ID, d, sizeof(d)) > 0) {
         return 0;
