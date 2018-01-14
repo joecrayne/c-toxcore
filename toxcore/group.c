@@ -1721,7 +1721,7 @@ static int group_ping_send(const Group_Chats *g_c, int groupnumber)
 
 static int nick_request_send(const Group_Chats *g_c, int groupnumber, int gid)
 {
-    uint8_t d[sizeof uint16_t];
+    uint8_t d[sizeof(uint16_t)];
     d[0] = gid >> 8;
     d[1] = gid >> 0xFF;
 
