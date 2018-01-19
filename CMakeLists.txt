@@ -54,9 +54,13 @@ message("SOVERSION: ${SOVERSION}")
 
 include(AddCompilerFlag)
 include(ApiDsl)
-include(MacRpath)
 include(ModulePackage)
 include(StrictAbi)
+include(GNUInstallDirs)
+
+if(APPLE)
+  include(MacRpath)
+endif()
 
 enable_testing()
 
@@ -228,6 +232,8 @@ endif()
 
 # LAYER 3: Distributed Hash Table
 # -------------------------------
+apidsl(toxcore/LAN_discovery.api.h)
+apidsl(toxcore/ping.api.h)
 apidsl(toxcore/ping_array.api.h)
 add_submodule(toxcore toxdht
   toxcore/DHT.c
@@ -373,9 +379,9 @@ endforeach()
 # Make version script (on systems that support it) to limit symbol visibility.
 make_version_script(toxcore ${toxcore_API_HEADERS})
 
-# Generate pkg-config file, install library to "lib" and install headers to
-# "include/tox".
-install_module(toxcore DESTINATION "include/tox")
+# Generate pkg-config file, install library to "${CMAKE_INSTALL_LIBDIR}" and install headers to
+# "${CMAKE_INSTALL_INCLUDEDIR}/tox".
+install_module(toxcore DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tox)
 
 ################################################################################
 #
@@ -383,37 +389,37 @@ install_module(toxcore DESTINATION "include/tox")
 #
 ################################################################################
 
-find_program(SPECTEST NAMES
-  tox-spectest
-  ../.stack-work/install/x86_64-linux/lts-2.22/7.8.4/bin/tox-spectest)
-
-if(NOT SPECTEST)
-  find_program(STACK NAMES stack)
-  if(STACK)
-    set(SPECTEST
-      ${STACK} --stack-yaml ${toxcore_SOURCE_DIR}/../stack.yaml exec --
-      tox-spectest)
-  endif()
-endif()
-
-if(MSGPACK_FOUND)
-  add_c_executable(toxcore-sut
-    testing/hstox/binary_decode.c
-    testing/hstox/binary_encode.c
-    testing/hstox/driver.c
-    testing/hstox/methods.c
-    testing/hstox/packet_kinds.c
-    testing/hstox/test_main.c
-    testing/hstox/util.c)
-  target_link_modules(toxcore-sut
-    toxcore
-    toxdht
-    toxnetcrypto
-    ${MSGPACK_LIBRARIES})
-  if(SPECTEST)
-    add_test(NAME spectest COMMAND ${SPECTEST} $<TARGET_FILE:toxcore-sut>)
-  endif()
-endif()
+# find_program(SPECTEST NAMES
+#   tox-spectest
+#   ../.stack-work/install/x86_64-linux/lts-2.22/7.8.4/bin/tox-spectest)
+# 
+# if(NOT SPECTEST)
+#   find_program(STACK NAMES stack)
+#   if(STACK)
+#     set(SPECTEST
+#       ${STACK} --stack-yaml ${toxcore_SOURCE_DIR}/../stack.yaml exec --
+#       tox-spectest)
+#   endif()
+# endif()
+# 
+# if(MSGPACK_FOUND)
+#   add_c_executable(toxcore-sut
+#     testing/hstox/binary_decode.c
+#     testing/hstox/binary_encode.c
+#     testing/hstox/driver.c
+#     testing/hstox/methods.c
+#     testing/hstox/packet_kinds.c
+#     testing/hstox/test_main.c
+#     testing/hstox/util.c)
+#   target_link_modules(toxcore-sut
+#     toxcore
+#     toxdht
+#     toxnetcrypto
+#     ${MSGPACK_LIBRARIES})
+#   if(SPECTEST)
+#     add_test(NAME spectest COMMAND ${SPECTEST} $<TARGET_FILE:toxcore-sut>)
+#   endif()
+# endif()
 
 ################################################################################
 #

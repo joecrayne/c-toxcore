@@ -140,26 +140,25 @@ typedef union {
     uint16_t uint16[8];
     uint32_t uint32[4];
     uint64_t uint64[2];
-}
-IP6;
+} IP6;
 
 IP6 get_ip6_loopback(void);
 extern const IP6 IP6_BROADCAST;
 
+#define IP_DEFINED
 typedef struct {
     uint8_t family;
     GNU_EXTENSION union {
         IP4 ip4;
         IP6 ip6;
     };
-}
-IP;
+} IP;
 
-typedef struct {
+#define IP_PORT_DEFINED
+typedef struct IP_Port {
     IP ip;
     uint16_t port;
-}
-IP_Port;
+} IP_Port;
 
 /* Convert values between host and network byte order.
  */

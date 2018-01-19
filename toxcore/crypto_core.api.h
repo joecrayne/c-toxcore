@@ -110,6 +110,13 @@ static int32_t public_key_cmp(
     const uint8_t[CRYPTO_PUBLIC_KEY_SIZE] pk1,
     const uint8_t[CRYPTO_PUBLIC_KEY_SIZE] pk2);
 
+namespace random {
+
+/**
+ * Return a random 16 bit integer.
+ */
+static uint16_t u16();
+
 /**
  * Return a random 16 bit integer.
  */
@@ -118,12 +125,24 @@ static uint16_t random_16b();
 /**
  * Return a random 32 bit integer.
  */
-static uint32_t random_int();
+static uint32_t u32();
 
 /**
  * Return a random 64 bit integer.
  */
-static uint64_t random_64b();
+static uint64_t u64();
+
+/**
+ * Fill the given nonce with random bytes.
+ */
+static void nonce(uint8_t[CRYPTO_NONCE_SIZE] nonce);
+
+/**
+ * Fill an array of bytes with random values.
+ */
+static void bytes(uint8_t[length] bytes);
+
+}
 
 /**
  * Check if a Tox public key CRYPTO_PUBLIC_KEY_SIZE is valid or not. This
@@ -232,19 +251,9 @@ static void increment_nonce(uint8_t[CRYPTO_NONCE_SIZE] nonce);
 static void increment_nonce_number(uint8_t[CRYPTO_NONCE_SIZE] nonce, uint32_t host_order_num);
 
 /**
- * Fill the given nonce with random bytes.
- */
-static void random_nonce(uint8_t[CRYPTO_NONCE_SIZE] nonce);
-
-/**
  * Fill a key CRYPTO_SYMMETRIC_KEY_SIZE big with random bytes.
  */
 static void new_symmetric_key(uint8_t[CRYPTO_SYMMETRIC_KEY_SIZE] key);
-
-/**
- * Fill an array of bytes with random values.
- */
-static void random_bytes(uint8_t[length] bytes);
 
 %{
 #endif /* CRYPTO_CORE_H */
