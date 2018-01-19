@@ -1723,7 +1723,7 @@ static int nick_request_send(const Group_Chats *g_c, int groupnumber, int gid)
 {
     uint8_t d[sizeof(uint16_t)];
     d[0] = gid >> 8;
-    d[1] = gid >> 0xFF;
+    d[1] = gid & 0xff;
 
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_NICKNAME_ID, d, sizeof(d)) > 0) {
         return 0;
@@ -1791,7 +1791,7 @@ static void change_self_peer_gid(Group_Chats *g_c, int32_t groupnumber, int self
  * return -1 on failure
  */
 static int group_new_peer_send(Group_Chats *g_c, int32_t groupnumber, uint16_t peer_gid, const uint8_t *real_pk,
-                               uint8_t *temp_pk)
+                               const uint8_t *temp_pk)
 {
     uint8_t packet[GROUP_MESSAGE_NEW_PEER_LENGTH];
     peer_gid = net_htons(peer_gid);
@@ -3609,7 +3609,8 @@ static void restore_conference(Group_Chats *g_c)
 
         uint8_t invite_data[GROUP_IDENTIFIER_LENGTH + sizeof(uint16_t)];
 
-        *(uint16_t *)invite_data = htons(jd->fails);
+        invite_data[0] = jd->fails >> 8;
+        invite_data[1] = jd->fails & 0xff;
 
         memcpy(invite_data + 2, g->identifier, GROUP_IDENTIFIER_LENGTH);
 
