@@ -97,7 +97,7 @@ enum {
 
 static void group_name_send(const Group_Chats *g_c, int32_t groupnumber, const uint8_t *nick, uint8_t nick_len);
 static int64_t send_packet_online(Friend_Connections *fr_c, int friendcon_id,
-                                  uint16_t group_num, uint8_t *identifier);
+                                  uint16_t group_num, const uint8_t *identifier);
 static uint32_t send_lossy_all_close(const Group_Chats *g_c, int32_t groupnumber, const uint8_t *data, uint16_t length,
                                      uint16_t receiver);
 static uint32_t send_message_all_close(const Group_Chats *g_c, int32_t groupnumber, const uint8_t *data,
@@ -112,7 +112,7 @@ static int g_handle_packet(void *object, int friendcon_id, const uint8_t *data, 
 static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata);
 static void send_peers(Group_Chats *g_c, int32_t groupnumber, int friendcon_id, uint16_t other_group_num);
 static void send_peer_nums(const Group_Chats *g_c, int32_t groupnumber, int friendcon_id, uint16_t other_group_num);
-static int get_self_peer_gid(Group_c *g);
+static int get_self_peer_gid(const Group_c *g);
 static int conference_unsubscribe(const Group_Chats *g_c, int32_t groupnumber, UnsubscribeType u);
 static Group_c *group_kill_peer_send(const Group_Chats *g_c, int32_t groupnumber);
 static int8_t group_packet_index(uint8_t msg_id);
@@ -411,8 +411,9 @@ static void apply_changes_in_peers(Group_Chats *g_c, int32_t groupnumber, void *
         /* detect almost deleted peers and prepare peers_list slots for delete */
         for (uint32_t i = 0; i < g->numpeers_in_list; ++i) {
             uint32_t peer_index = g->peers_list[i];
+            const Group_Peer *peer = &g->peers[peer_index];
 
-            if (g->peers[peer_index].friendcon_id == ALMOST_DELETED_PEER || g->peers[peer_index].gid < 0) {
+            if (peer->friendcon_id == ALMOST_DELETED_PEER || peer->gid < 0) {
                 some_changes = true;
                 g->peers_list[i] = INVALID_PEER_INDEX;
                 ++empty_slots_in_list;
@@ -464,7 +465,7 @@ static void apply_changes_in_peers(Group_Chats *g_c, int32_t groupnumber, void *
                 if (g->peers_list[j] == INVALID_PEER_INDEX) {
                     --g->numpeers_in_list;
                     /* g->peers_list[j] = g->peers_list[g->numpeers_in_list]; */ /* faster */
-                    memcpy(g->peers_list + j, g->peers_list + j + 1,
+                    memcpy(&g->peers_list[j], &g->peers_list[j] + 1,
                            sizeof(uint16_t) * (g->numpeers_in_list - j)); /* slower, but accurate */
                     some_changes = true;
                     continue;
@@ -562,7 +563,7 @@ static void apply_changes_in_peers(Group_Chats *g_c, int32_t groupnumber, void *
         uint32_t np = g->numpeers;
 
         for (uint32_t i = 0; i < np; ++i) {
-            Group_Peer *peer = &g->peers[i];
+            const Group_Peer *peer = &g->peers[i];
 
             if (peer->friendcon_id == ALMOST_DELETED_PEER || peer->auto_join || id_equal(g->real_pk, peer->real_pk)) {
                 continue;
@@ -582,7 +583,7 @@ static void apply_changes_in_peers(Group_Chats *g_c, int32_t groupnumber, void *
                     }
                 }
 
-                Group_Peer *peer = &g->peers[g->closest_peers[i]];
+                const Group_Peer *peer = &g->peers[g->closest_peers[i]];
 
                 if (just_added && peer->connected) {
                     send_packet_online(g_c->fr_c, peer->friendcon_id, (uint16_t)groupnumber, g->identifier);
@@ -1079,7 +1080,6 @@ static Group_c *disconnect_conference(const Group_Chats *g_c, int32_t groupnumbe
     g->keep_join_index = -1;
 
     for (uint32_t i = 0; i < g->numpeers; ++i) {
-
         Group_Peer *peer = &g->peers[i];
 
         if (peer->friendcon_id == ALMOST_DELETED_PEER) {
@@ -1214,7 +1214,7 @@ int group_peer_pubkey(const Group_Chats *g_c, int groupnumber, int peer_index, u
  */
 int group_peername_size(const Group_Chats *g_c, int groupnumber, int peer_index)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return -1;
@@ -1314,7 +1314,7 @@ int group_names(const Group_Chats *g_c, int groupnumber, uint8_t names[][MAX_NAM
  */
 int group_number_peers(const Group_Chats *g_c, int groupnumber)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return -1;
@@ -1331,7 +1331,7 @@ int group_number_peers(const Group_Chats *g_c, int groupnumber)
  */
 int group_peer_index_is_ours(const Group_Chats *g_c, int groupnumber, int peer_index)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return -1;
@@ -1356,7 +1356,7 @@ int group_peer_index_is_ours(const Group_Chats *g_c, int groupnumber, int peer_i
  */
 int group_get_type(const Group_Chats *g_c, int groupnumber)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return -1;
@@ -1372,7 +1372,7 @@ int group_get_type(const Group_Chats *g_c, int groupnumber)
 */
 bool conference_get_id(const Group_Chats *g_c, int groupnumber, uint8_t *uid)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return false;
@@ -1436,7 +1436,7 @@ static bool send_lossy_group_peer(Friend_Connections *fr_c, uint32_t friendcon_i
  */
 int invite_friend(Group_Chats *g_c, int32_t friendnumber, int groupnumber)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return -1;
@@ -1745,7 +1745,7 @@ static Group_Peer *get_self_peer(Group_c *g)
 }
 
 
-static int get_self_peer_gid(Group_c *g)
+static int get_self_peer_gid(const Group_c *g)
 {
     for (uint32_t i = 0; i < g->numpeers; ++i) {
         if (id_equal(g->real_pk, g->peers[i].real_pk)) {
@@ -1800,7 +1800,7 @@ static int group_new_peer_send(Group_Chats *g_c, int32_t groupnumber, uint16_t p
     memcpy(packet + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE, temp_pk, CRYPTO_PUBLIC_KEY_SIZE);
 
     /* make self gid valid due self is inviter */
-    Group_c *g = g_c->chats + groupnumber;
+    const Group_c *g = g_c->chats + groupnumber;
 
     if (get_self_peer_gid(g) < 0) {
         change_self_peer_gid(g_c, groupnumber, find_new_peer_gid(g));
@@ -1815,7 +1815,7 @@ static int group_new_peer_send(Group_Chats *g_c, int32_t groupnumber, uint16_t p
 
 static int conference_unsubscribe(const Group_Chats *g_c, int32_t groupnumber, UnsubscribeType u)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return -1;
@@ -1836,7 +1836,7 @@ static int conference_unsubscribe(const Group_Chats *g_c, int32_t groupnumber, U
 
 static void send_peer_nums(const Group_Chats *g_c, int32_t groupnumber, int friendcon_id, uint16_t other_group_num)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return;
@@ -1847,7 +1847,7 @@ static void send_peer_nums(const Group_Chats *g_c, int32_t groupnumber, int frie
     size_t ptr = 1;
 
     for (uint32_t i = 0; i < g->numpeers; ++i) {
-        Group_Peer *peer = &g->peers[i];
+        const Group_Peer *peer = &g->peers[i];
 
         if (peer->group_number == INVALID_GROUP_NUMBER) {
             continue;
@@ -1950,7 +1950,7 @@ int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *tit
  */
 int group_title_get_size(const Group_Chats *g_c, int groupnumber)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return -1;
@@ -1972,7 +1972,7 @@ int group_title_get_size(const Group_Chats *g_c, int groupnumber)
  */
 int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return -1;
@@ -2177,7 +2177,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
 }
 
 static int64_t send_packet_online(Friend_Connections *fr_c, int friendcon_id,
-                                  uint16_t my_group_num, uint8_t *identifier)
+                                  uint16_t my_group_num, const uint8_t *identifier)
 {
     uint8_t packet[1 + ONLINE_PACKET_DATA_SIZE];
     my_group_num = net_htons(my_group_num);
@@ -2199,7 +2199,7 @@ static int handle_packet_online(Group_Chats *g_c, int friendcon_id, const uint8_
     memcpy(&other_groupnum, data, sizeof(uint16_t));
     other_groupnum = net_ntohs(other_groupnum);
 
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return -1;
@@ -2265,7 +2265,7 @@ static void send_peer_query(const Group_Chats *g_c, int friendcon_id, uint16_t o
 
 static void send_peers(Group_Chats *g_c, int32_t groupnumber, int friendcon_id, uint16_t other_group_num)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return;
@@ -2496,7 +2496,7 @@ static void handle_direct_packet(Group_Chats *g_c, int32_t groupnumber, const ui
 static uint32_t send_message_all_close(const Group_Chats *g_c, int32_t groupnumber, const uint8_t *data,
                                        uint16_t length, uint16_t except_peer)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return 0;
@@ -2509,7 +2509,7 @@ static uint32_t send_message_all_close(const Group_Chats *g_c, int32_t groupnumb
             continue;
         }
 
-        Group_Peer *peer = &g->peers[i];
+        const Group_Peer *peer = &g->peers[i];
 
         if (!really_connected(peer)) {
             continue;
@@ -2532,7 +2532,7 @@ static uint32_t send_message_all_close(const Group_Chats *g_c, int32_t groupnumb
 static uint32_t send_lossy_all_close(const Group_Chats *g_c, int32_t groupnumber, const uint8_t *data, uint16_t length,
                                      uint16_t receiver)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return 0;
@@ -2586,7 +2586,7 @@ static uint32_t send_lossy_all_close(const Group_Chats *g_c, int32_t groupnumber
             continue;
         }
 
-        Group_Peer *peer = &g->peers[peer_index];
+        const Group_Peer *peer = &g->peers[peer_index];
 
 
         if (!really_connected(peer)) {
@@ -2621,7 +2621,7 @@ static uint32_t send_lossy_all_close(const Group_Chats *g_c, int32_t groupnumber
             continue;
         }
 
-        Group_Peer *peer = &g->peers[peer_index];
+        const Group_Peer *peer = &g->peers[peer_index];
 
         if (!really_connected(peer)) {
             continue;
@@ -2980,7 +2980,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
             kill_peer_number = net_ntohs(kill_peer_number);
 
             if (kill_peer_number == from_peer_gid) {
-                Group_c *g = get_group_c(g_c, groupnumber);
+                const Group_c *g = get_group_c(g_c, groupnumber);
 
                 if (g) {
                     unsubscribe_peer(g_c, g->identifier + 1, g->peers[index].real_pk, UNS_TEMP);
@@ -3078,7 +3078,7 @@ static int g_handle_packet(void *object, int friendcon_id, const uint8_t *data, 
     uint16_t groupnumber;
     memcpy(&groupnumber, data + 1, sizeof(uint16_t));
     groupnumber = net_ntohs(groupnumber);
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return -1;
@@ -3358,7 +3358,7 @@ static int64_t deltatime(uint64_t t1, uint64_t t2)
 static bool possible_groupnum(Group_Chats *g_c, Group_c *ig, uint16_t gn, const uint8_t *for_pk)
 {
     for (uint16_t i = 0; i < g_c->num_chats; ++i) {
-        Group_c *g = get_group_c(g_c, i);
+        const Group_c *g = get_group_c(g_c, i);
 
         if (g == ig) {
             continue;
@@ -3749,7 +3749,7 @@ void do_groupchats(Group_Chats *g_c, void *userdata)
     }
 
     for (uint16_t i = 0; i < g_c->num_chats; ++i) {
-        Group_c *g = &g_c->chats[i];
+        const Group_c *g = &g_c->chats[i];
 
         if (!g->live) {
             continue;
@@ -3832,12 +3832,12 @@ uint32_t copy_chatlist(const Group_Chats *g_c, uint32_t *out_list, uint32_t list
 
 static uint32_t saved_conferences_size(const Messenger *m)
 {
-    Group_Chats *g_c = (Group_Chats *)m->conferences_object;
+    const Group_Chats *g_c = (Group_Chats *)m->conferences_object;
 
     size_t sz = sizeof(uint16_t);   // size of number of groupchats
 
     for (uint16_t i = 0; i < g_c->num_chats; ++i) {
-        Group_c *g = &g_c->chats[i];
+        const Group_c *g = &g_c->chats[i];
 
         if (!g->live) {
             continue;
@@ -3873,7 +3873,7 @@ static void conferences_save(const Messenger *m, uint8_t *data)
     data += sizeof(uint16_t);
 
     for (uint16_t i = 0; i < g_c->num_chats; ++i) {
-        Group_c *g = &g_c->chats[i];
+        const Group_c *g = &g_c->chats[i];
 
         if (!g->live) {
             continue;
@@ -3901,7 +3901,7 @@ static void conferences_save(const Messenger *m, uint8_t *data)
             putbytes(&data, g->joinpeers[j].real_pk, CRYPTO_PUBLIC_KEY_SIZE);
         }
 
-        ++(*num);
+        ++*num;
     }
 }
 
