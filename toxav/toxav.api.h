@@ -485,6 +485,13 @@ error for send_frame {
 
 namespace audio {
   /**
+   * TODO: comment.
+   */
+  uint32_t bit_rate {
+    set();
+  }
+
+  /**
    * Send an audio frame to a friend.
    *
    * The expected format of the PCM data is: [s1c1][s1c2][...][s2c1][s2c2][...]...
@@ -509,6 +516,13 @@ namespace audio {
 }
 
 namespace video {
+  /**
+   * TODO: comment.
+   */
+  uint32_t bit_rate {
+    set();
+  }
+
   /**
    * Send a video frame to a friend.
    *

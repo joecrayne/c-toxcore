@@ -611,6 +611,11 @@ typedef enum TOXAV_ERR_SEND_FRAME {
 
 
 /**
+ * TODO: comment.
+ */
+void toxav_audio_set_bit_rate(ToxAV *av, uint32_t bit_rate);
+
+/**
  * Send an audio frame to a friend.
  *
  * The expected format of the PCM data is: [s1c1][s1c2][...][s2c1][s2c2][...]...
@@ -632,6 +637,11 @@ typedef enum TOXAV_ERR_SEND_FRAME {
  */
 bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t *pcm, size_t sample_count,
                             uint8_t channels, uint32_t sampling_rate, TOXAV_ERR_SEND_FRAME *error);
+
+/**
+ * TODO: comment.
+ */
+void toxav_video_set_bit_rate(ToxAV *av, uint32_t bit_rate);
 
 /**
  * Send a video frame to a friend.
