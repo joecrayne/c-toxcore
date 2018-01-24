@@ -481,34 +481,34 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, TOXAV_CALL_CONTROL co
 
 
 
-typedef enum TOXAV_ERR_BIT_RATE_SET_AUDIO {
+typedef enum TOXAV_ERR_BIT_RATE_SET {
 
     /**
      * The function returned successfully.
      */
-    TOXAV_ERR_BIT_RATE_SET_AUDIO_OK,
+    TOXAV_ERR_BIT_RATE_SET_OK,
 
     /**
      * Synchronization error occurred.
      */
-    TOXAV_ERR_BIT_RATE_SET_AUDIO_SYNC,
+    TOXAV_ERR_BIT_RATE_SET_SYNC,
 
     /**
-     * The audio bit rate passed was not one of the supported values.
+     * The bit rate passed was not one of the supported values.
      */
-    TOXAV_ERR_BIT_RATE_SET_AUDIO_INVALID_BIT_RATE,
+    TOXAV_ERR_BIT_RATE_SET_INVALID_BIT_RATE,
 
     /**
      * The friend_number passed did not designate a valid friend.
      */
-    TOXAV_ERR_BIT_RATE_SET_AUDIO_FRIEND_NOT_FOUND,
+    TOXAV_ERR_BIT_RATE_SET_FRIEND_NOT_FOUND,
 
     /**
      * This client is currently not in a call with the friend.
      */
-    TOXAV_ERR_BIT_RATE_SET_AUDIO_FRIEND_NOT_IN_CALL,
+    TOXAV_ERR_BIT_RATE_SET_FRIEND_NOT_IN_CALL,
 
-} TOXAV_ERR_BIT_RATE_SET_AUDIO;
+} TOXAV_ERR_BIT_RATE_SET;
 
 
 /**
@@ -520,37 +520,7 @@ typedef enum TOXAV_ERR_BIT_RATE_SET_AUDIO {
  *
  */
 bool toxav_bit_rate_set_audio(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate,
-                              TOXAV_ERR_BIT_RATE_SET_AUDIO *error);
-
-typedef enum TOXAV_ERR_BIT_RATE_SET_VIDEO {
-
-    /**
-     * The function returned successfully.
-     */
-    TOXAV_ERR_BIT_RATE_SET_VIDEO_OK,
-
-    /**
-     * Synchronization error occurred.
-     */
-    TOXAV_ERR_BIT_RATE_SET_VIDEO_SYNC,
-
-    /**
-     * The video bit rate passed was not one of the supported values.
-     */
-    TOXAV_ERR_BIT_RATE_SET_VIDEO_INVALID_BIT_RATE,
-
-    /**
-     * The friend_number passed did not designate a valid friend.
-     */
-    TOXAV_ERR_BIT_RATE_SET_VIDEO_FRIEND_NOT_FOUND,
-
-    /**
-     * This client is currently not in a call with the friend.
-     */
-    TOXAV_ERR_BIT_RATE_SET_VIDEO_FRIEND_NOT_IN_CALL,
-
-} TOXAV_ERR_BIT_RATE_SET_VIDEO;
-
+                              TOXAV_ERR_BIT_RATE_SET *error);
 
 /**
  * Set the bit rate to be used in subsequent video frames.
@@ -561,7 +531,7 @@ typedef enum TOXAV_ERR_BIT_RATE_SET_VIDEO {
  *
  */
 bool toxav_bit_rate_set_video(ToxAV *av, uint32_t friend_number, uint32_t video_bit_rate,
-                              TOXAV_ERR_BIT_RATE_SET_VIDEO *error);
+                              TOXAV_ERR_BIT_RATE_SET *error);
 
 /**
  * The function type for the bit_rate_status callback. The event is triggered

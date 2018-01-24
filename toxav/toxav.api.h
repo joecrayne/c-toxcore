@@ -386,6 +386,25 @@ bool call_control(uint32_t friend_number, CALL_CONTROL control) {
  ******************************************************************************/
 
 
+error for bit_rate_set {
+  /**
+   * Synchronization error occurred.
+   */
+  SYNC,
+  /**
+   * The bit rate passed was not one of the supported values.
+   */
+  INVALID_BIT_RATE,
+  /**
+   * The friend_number passed did not designate a valid friend.
+   */
+  FRIEND_NOT_FOUND,
+  /**
+   * This client is currently not in a call with the friend.
+   */
+  FRIEND_NOT_IN_CALL,
+}
+
 namespace bit_rate {
   /**
    * Set the bit rate to be used in subsequent audio frames.
@@ -396,24 +415,7 @@ namespace bit_rate {
    *
    */
 
-  bool set_audio(uint32_t friend_number, uint32_t audio_bit_rate) {
-    /**
-     * Synchronization error occurred.
-     */
-    SYNC,
-    /**
-     * The audio bit rate passed was not one of the supported values.
-     */
-    INVALID_BIT_RATE,
-    /**
-     * The friend_number passed did not designate a valid friend.
-     */
-    FRIEND_NOT_FOUND,
-    /**
-     * This client is currently not in a call with the friend.
-     */
-    FRIEND_NOT_IN_CALL,
-  }
+  bool set_audio(uint32_t friend_number, uint32_t audio_bit_rate) with error for bit_rate_set;
   /**
    * Set the bit rate to be used in subsequent video frames.
    *
@@ -422,24 +424,7 @@ namespace bit_rate {
    * @param video_bit_rate The new video bit rate in Kb/sec. Set to 0 to disable
    *
    */
-  bool set_video(uint32_t friend_number, uint32_t video_bit_rate) {
-    /**
-     * Synchronization error occurred.
-     */
-    SYNC,
-    /**
-     * The video bit rate passed was not one of the supported values.
-     */
-    INVALID_BIT_RATE,
-    /**
-     * The friend_number passed did not designate a valid friend.
-     */
-    FRIEND_NOT_FOUND,
-    /**
-     * This client is currently not in a call with the friend.
-     */
-    FRIEND_NOT_IN_CALL,
-  }
+  bool set_video(uint32_t friend_number, uint32_t video_bit_rate) with error for bit_rate_set;
 
   event status {
     /**

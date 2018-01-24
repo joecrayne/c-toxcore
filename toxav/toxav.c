@@ -526,18 +526,18 @@ END:
     return rc == TOXAV_ERR_CALL_CONTROL_OK;
 }
 bool toxav_bit_rate_set_audio(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate,
-                              TOXAV_ERR_BIT_RATE_SET_AUDIO *error)
+                              TOXAV_ERR_BIT_RATE_SET *error)
 {
-    TOXAV_ERR_BIT_RATE_SET_AUDIO rc = TOXAV_ERR_BIT_RATE_SET_AUDIO_OK;
+    TOXAV_ERR_BIT_RATE_SET rc = TOXAV_ERR_BIT_RATE_SET_OK;
     ToxAVCall *call;
 
     if (m_friend_exists(av->m, friend_number) == 0) {
-        rc = TOXAV_ERR_BIT_RATE_SET_AUDIO_FRIEND_NOT_FOUND;
+        rc = TOXAV_ERR_BIT_RATE_SET_FRIEND_NOT_FOUND;
         goto END;
     }
 
     if (audio_bit_rate > 0 && audio_bit_rate_invalid(audio_bit_rate)) {
-        rc = TOXAV_ERR_BIT_RATE_SET_AUDIO_INVALID_BIT_RATE;
+        rc = TOXAV_ERR_BIT_RATE_SET_INVALID_BIT_RATE;
         goto END;
     }
 
@@ -546,7 +546,7 @@ bool toxav_bit_rate_set_audio(ToxAV *av, uint32_t friend_number, uint32_t audio_
 
     if (call == NULL || !call->active || call->msi_call->state != msi_CallActive) {
         pthread_mutex_unlock(av->mutex);
-        rc = TOXAV_ERR_BIT_RATE_SET_AUDIO_FRIEND_NOT_IN_CALL;
+        rc = TOXAV_ERR_BIT_RATE_SET_FRIEND_NOT_IN_CALL;
         goto END;
     }
 
@@ -560,7 +560,7 @@ bool toxav_bit_rate_set_audio(ToxAV *av, uint32_t friend_number, uint32_t audio_
         if (msi_change_capabilities(call->msi_call, call->msi_call->
                                     self_capabilities ^ msi_CapSAudio) != 0) {
             pthread_mutex_unlock(av->mutex);
-            rc = TOXAV_ERR_BIT_RATE_SET_AUDIO_SYNC;
+            rc = TOXAV_ERR_BIT_RATE_SET_SYNC;
             goto END;
         }
 
@@ -577,7 +577,7 @@ bool toxav_bit_rate_set_audio(ToxAV *av, uint32_t friend_number, uint32_t audio_
                                         msi_call->self_capabilities | msi_CapSAudio) != 0) {
                 pthread_mutex_unlock(call->mutex);
                 pthread_mutex_unlock(av->mutex);
-                rc = TOXAV_ERR_BIT_RATE_SET_AUDIO_SYNC;
+                rc = TOXAV_ERR_BIT_RATE_SET_SYNC;
                 goto END;
             }
         } else {
@@ -595,21 +595,21 @@ END:
         *error = rc;
     }
 
-    return rc == TOXAV_ERR_BIT_RATE_SET_AUDIO_OK;
+    return rc == TOXAV_ERR_BIT_RATE_SET_OK;
 }
 bool toxav_bit_rate_set_video(ToxAV *av, uint32_t friend_number, uint32_t video_bit_rate,
-                              TOXAV_ERR_BIT_RATE_SET_VIDEO *error)
+                              TOXAV_ERR_BIT_RATE_SET *error)
 {
-    TOXAV_ERR_BIT_RATE_SET_VIDEO rc = TOXAV_ERR_BIT_RATE_SET_VIDEO_OK;
+    TOXAV_ERR_BIT_RATE_SET rc = TOXAV_ERR_BIT_RATE_SET_OK;
     ToxAVCall *call;
 
     if (m_friend_exists(av->m, friend_number) == 0) {
-        rc = TOXAV_ERR_BIT_RATE_SET_VIDEO_FRIEND_NOT_FOUND;
+        rc = TOXAV_ERR_BIT_RATE_SET_FRIEND_NOT_FOUND;
         goto END;
     }
 
     if (video_bit_rate > 0 && video_bit_rate_invalid(video_bit_rate)) {
-        rc = TOXAV_ERR_BIT_RATE_SET_VIDEO_INVALID_BIT_RATE;
+        rc = TOXAV_ERR_BIT_RATE_SET_INVALID_BIT_RATE;
         goto END;
     }
 
@@ -618,7 +618,7 @@ bool toxav_bit_rate_set_video(ToxAV *av, uint32_t friend_number, uint32_t video_
 
     if (call == NULL || !call->active || call->msi_call->state != msi_CallActive) {
         pthread_mutex_unlock(av->mutex);
-        rc = TOXAV_ERR_BIT_RATE_SET_VIDEO_FRIEND_NOT_IN_CALL;
+        rc = TOXAV_ERR_BIT_RATE_SET_FRIEND_NOT_IN_CALL;
         goto END;
     }
 
@@ -633,7 +633,7 @@ bool toxav_bit_rate_set_video(ToxAV *av, uint32_t friend_number, uint32_t video_
         if (msi_change_capabilities(call->msi_call, call->msi_call->
                                     self_capabilities ^ msi_CapSVideo) != 0) {
             pthread_mutex_unlock(av->mutex);
-            rc = TOXAV_ERR_BIT_RATE_SET_VIDEO_SYNC;
+            rc = TOXAV_ERR_BIT_RATE_SET_SYNC;
             goto END;
         }
 
@@ -649,7 +649,7 @@ bool toxav_bit_rate_set_video(ToxAV *av, uint32_t friend_number, uint32_t video_
                                         msi_call->self_capabilities | msi_CapSVideo) != 0) {
                 pthread_mutex_unlock(call->mutex);
                 pthread_mutex_unlock(av->mutex);
-                rc = TOXAV_ERR_BIT_RATE_SET_VIDEO_SYNC;
+                rc = TOXAV_ERR_BIT_RATE_SET_SYNC;
                 goto END;
             }
         } else {
@@ -667,7 +667,7 @@ END:
         *error = rc;
     }
 
-    return rc == TOXAV_ERR_BIT_RATE_SET_VIDEO_OK;
+    return rc == TOXAV_ERR_BIT_RATE_SET_OK;
 }
 void toxav_callback_bit_rate_status(ToxAV *av, toxav_bit_rate_status_cb *callback, void *user_data)
 {
