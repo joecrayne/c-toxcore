@@ -83,9 +83,9 @@ void host_to_net(uint8_t *num, uint16_t numbytes)
     uint32_t i;
     VLA(uint8_t, buff, numbytes);
 
-    for (i = 0; i < numbytes; ++i) {
+      {for (i = 0; i < numbytes; ++i) {
         buff[i] = num[numbytes - i - 1];
-    }
+    }}
 
     memcpy(num, buff, numbytes);
 #endif
@@ -130,7 +130,6 @@ int load_state(load_state_callback_func load_state_callback, Logger *log, void *
     }
 
 
-    uint16_t type;
     uint32_t length_sub, cookie_type;
     uint32_t size_head = sizeof(uint32_t) * 2;
 
@@ -152,7 +151,7 @@ int load_state(load_state_callback_func load_state_callback, Logger *log, void *
             return -1;
         }
 
-        type = lendian_to_host16(cookie_type & 0xFFFF);
+        uint16_t type = lendian_to_host16(cookie_type & 0xFFFF);
 
         int ret = load_state_callback(outer, data, length_sub, type);
 

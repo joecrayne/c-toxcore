@@ -798,7 +798,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
     *portptr = net_htons(port_to_try);
     int tries;
 
-    for (tries = port_from; tries <= port_to; tries++) {
+      {for (tries = port_from; tries <= port_to; tries++) {
         int res = bind(temp->sock, (struct sockaddr *)&addr, addrsize);
 
         if (!res) {
@@ -829,7 +829,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
         }
 
         *portptr = net_htons(port_to_try);
-    }
+    }}
 
     char ip_str[IP_NTOA_LEN];
     LOGGER_ERROR(log, "Failed to bind socket: %u, %s IP: %s port_from: %u port_to: %u", errno, strerror(errno),
@@ -1178,7 +1178,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     IP ip6;
     ip_init(&ip6, 1); // ipv6enabled = 1
 
-    for (walker = server; (walker != NULL) && !done; walker = walker->ai_next) {
+      {for (walker = server; (walker != NULL) && !done; walker = walker->ai_next) {
         switch (walker->ai_family) {
             case AF_INET:
                 if (walker->ai_family == family) { /* AF_INET requested, done */
@@ -1212,7 +1212,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
 
                 break; /* switch */
         }
-    }
+    }}
 
     if (family == AF_UNSPEC) {
         if (result & TOX_ADDR_RESOLVE_INET6) {
@@ -1300,7 +1300,7 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
     struct addrinfo *cur;
     int32_t count = 0;
 
-    for (cur = infos; count < MAX_COUNT && cur != NULL; cur = cur->ai_next) {
+      {for (cur = infos; count < MAX_COUNT && cur != NULL; cur = cur->ai_next) {
         if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {
             continue;
         }
@@ -1310,7 +1310,7 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
         }
 
         count++;
-    }
+    }}
 
     assert(count <= MAX_COUNT);
 
@@ -1328,7 +1328,7 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
 
     IP_Port *ip_port = *res;
 
-    for (cur = infos; cur != NULL; cur = cur->ai_next) {
+      {for (cur = infos; cur != NULL; cur = cur->ai_next) {
         if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {
             continue;
         }
@@ -1346,7 +1346,7 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
         ip_port->ip.family = make_tox_family(cur->ai_family);
 
         ip_port++;
-    }
+    }}
 
     freeaddrinfo(infos);
 

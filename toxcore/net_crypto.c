@@ -835,14 +835,14 @@ static int clear_buffer_until(Packets_Array *array, uint32_t number)
 
     uint32_t i;
 
-    for (i = array->buffer_start; i != number; ++i) {
+      {for (i = array->buffer_start; i != number; ++i) {
         uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
 
         if (array->buffer[num]) {
             free(array->buffer[num]);
             array->buffer[num] = NULL;
         }
-    }
+    }}
 
     array->buffer_start = i;
     return 0;
@@ -852,14 +852,14 @@ static int clear_buffer(Packets_Array *array)
 {
     uint32_t i;
 
-    for (i = array->buffer_start; i != array->buffer_end; ++i) {
+      {for (i = array->buffer_start; i != array->buffer_end; ++i) {
         uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
 
         if (array->buffer[num]) {
             free(array->buffer[num]);
             array->buffer[num] = NULL;
         }
-    }
+    }}
 
     array->buffer_start = i;
     return 0;
@@ -910,7 +910,7 @@ static int generate_request_packet(uint8_t *data, uint16_t length, const Packets
 
     uint32_t i, n = 1;
 
-    for (i = recv_array->buffer_start; i != recv_array->buffer_end; ++i) {
+      {for (i = recv_array->buffer_start; i != recv_array->buffer_end; ++i) {
         uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
 
         if (!recv_array->buffer[num]) {
@@ -932,7 +932,7 @@ static int generate_request_packet(uint8_t *data, uint16_t length, const Packets
         }
 
         ++n;
-    }
+    }}
 
     return cur_len;
 }
@@ -967,7 +967,7 @@ static int handle_request_packet(Packets_Array *send_array, const uint8_t *data,
     uint64_t temp_time = current_time_monotonic();
     uint64_t l_sent_time = ~0;
 
-    for (i = send_array->buffer_start; i != send_array->buffer_end; ++i) {
+      {for (i = send_array->buffer_start; i != send_array->buffer_end; ++i) {
         if (length == 0) {
             break;
         }
@@ -1012,7 +1012,7 @@ static int handle_request_packet(Packets_Array *send_array, const uint8_t *data,
         } else {
             ++n;
         }
-    }
+    }}
 
     if (*latest_send_time < l_sent_time) {
         *latest_send_time = l_sent_time;
@@ -1273,7 +1273,7 @@ static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint32
     uint64_t temp_time = current_time_monotonic();
     uint32_t i, num_sent = 0, array_size = num_packets_array(&conn->send_array);
 
-    for (i = 0; i < array_size; ++i) {
+      {for (i = 0; i < array_size; ++i) {
         Packet_Data *dt;
         uint32_t packet_num = (i + conn->send_array.buffer_start);
         int ret = get_data_pointer(&conn->send_array, &dt, packet_num);
@@ -1299,7 +1299,7 @@ static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint32
         if (num_sent >= max_num) {
             break;
         }
-    }
+    }}
 
     return num_sent;
 }
@@ -1546,7 +1546,7 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
 
         set_buffer_end(&conn->recv_array, num);
     } else if (real_data[0] >= CRYPTO_RESERVED_PACKETS && real_data[0] < PACKET_ID_LOSSY_RANGE_START) {
-        Packet_Data dt;
+        Packet_Data dt = {0};
         dt.length = real_length;
         memcpy(dt.data, real_data, real_length);
 
@@ -1727,11 +1727,11 @@ static int create_crypto_connection(Net_Crypto *c)
 {
     uint32_t i;
 
-    for (i = 0; i < c->crypto_connections_length; ++i) {
+      {for (i = 0; i < c->crypto_connections_length; ++i) {
         if (c->crypto_connections[i].status == CRYPTO_CONN_NO_CONNECTION) {
             return i;
         }
-    }
+    }}
 
     while (1) { /* TODO(irungentoo): is this really the best way to do this? */
         pthread_mutex_lock(&c->connections_mutex);
@@ -1784,13 +1784,13 @@ static int wipe_crypto_connection(Net_Crypto *c, int crypt_connection_id)
     crypto_memzero(&c->crypto_connections[crypt_connection_id], sizeof(Crypto_Connection));
     c->crypto_connections[crypt_connection_id].mutex = mutex;
 
-    for (i = c->crypto_connections_length; i != 0; --i) {
+      {for (i = c->crypto_connections_length; i != 0; --i) {
         if (c->crypto_connections[i - 1].status == CRYPTO_CONN_NO_CONNECTION) {
             pthread_mutex_destroy(&c->crypto_connections[i - 1].mutex);
         } else {
             break;
         }
-    }
+    }}
 
     if (c->crypto_connections_length != i) {
         c->crypto_connections_length = i;
@@ -1809,13 +1809,13 @@ static int getcryptconnection_id(const Net_Crypto *c, const uint8_t *public_key)
 {
     uint32_t i;
 
-    for (i = 0; i < c->crypto_connections_length; ++i) {
+      {for (i = 0; i < c->crypto_connections_length; ++i) {
         if (c->crypto_connections[i].status != CRYPTO_CONN_NO_CONNECTION) {
             if (public_key_cmp(public_key, c->crypto_connections[i].public_key) == 0) {
                 return i;
             }
         }
-    }
+    }}
 
     return -1;
 }
@@ -2236,7 +2236,7 @@ static void do_tcp(Net_Crypto *c, void *userdata)
 
     uint32_t i;
 
-    for (i = 0; i < c->crypto_connections_length; ++i) {
+      {for (i = 0; i < c->crypto_connections_length; ++i) {
         Crypto_Connection *conn = get_crypto_connection(c, i);
 
         if (conn == 0) {
@@ -2257,7 +2257,7 @@ static void do_tcp(Net_Crypto *c, void *userdata)
                 pthread_mutex_unlock(&c->tcp_mutex);
             }
         }
-    }
+    }}
 }
 
 /* Set function to be called when connection with crypt_connection_id goes connects/disconnects.
@@ -2446,7 +2446,7 @@ static void send_crypto_packets(Net_Crypto *c)
     double total_send_rate = 0;
     uint32_t peak_request_packet_interval = ~0;
 
-    for (i = 0; i < c->crypto_connections_length; ++i) {
+      {for (i = 0; i < c->crypto_connections_length; ++i) {
         Crypto_Connection *conn = get_crypto_connection(c, i);
 
         if (conn == 0) {
@@ -2517,7 +2517,6 @@ static void send_crypto_packets(Net_Crypto *c)
                 conn->last_sendqueue_size[pos] = num_packets_array(&conn->send_array);
                 ++conn->last_sendqueue_counter;
 
-                unsigned int j;
                 long signed int sum = 0;
                 sum = (long signed int)conn->last_sendqueue_size[(pos) % CONGESTION_QUEUE_ARRAY_SIZE] -
                       (long signed int)conn->last_sendqueue_size[(pos - (CONGESTION_QUEUE_ARRAY_SIZE - 1)) % CONGESTION_QUEUE_ARRAY_SIZE];
@@ -2542,11 +2541,11 @@ static void send_crypto_packets(Net_Crypto *c)
                         delay = packets_set_rem_array;
                     }
 
-                    for (j = 0; j < CONGESTION_QUEUE_ARRAY_SIZE; ++j) {
+                      {for (unsigned j = 0; j < CONGESTION_QUEUE_ARRAY_SIZE; ++j) {
                         unsigned int ind = (j + (packets_set_rem_array  - delay) + n_p_pos) % CONGESTION_LAST_SENT_ARRAY_SIZE;
                         total_sent += conn->last_num_packets_sent[ind];
                         total_resent += conn->last_num_packets_resent[ind];
-                    }
+                    }}
 
                     if (sum > 0) {
                         total_sent -= sum;
@@ -2649,7 +2648,7 @@ static void send_crypto_packets(Net_Crypto *c)
                 total_send_rate += conn->packet_send_rate;
             }
         }
-    }
+    }}
 
     c->current_sleep_time = ~0;
     uint32_t sleep_time = peak_request_packet_interval;
@@ -2980,7 +2979,7 @@ static void kill_timedout(Net_Crypto *c, void *userdata)
     uint32_t i;
     //uint64_t temp_time = current_time_monotonic();
 
-    for (i = 0; i < c->crypto_connections_length; ++i) {
+      {for (i = 0; i < c->crypto_connections_length; ++i) {
         Crypto_Connection *conn = get_crypto_connection(c, i);
 
         if (conn == 0) {
@@ -3007,7 +3006,7 @@ static void kill_timedout(Net_Crypto *c, void *userdata)
         }
 
 #endif
-    }
+    }}
 }
 
 /* return the optimal interval in ms for running do_net_crypto.
@@ -3030,9 +3029,9 @@ void kill_net_crypto(Net_Crypto *c)
 {
     uint32_t i;
 
-    for (i = 0; i < c->crypto_connections_length; ++i) {
+      {for (i = 0; i < c->crypto_connections_length; ++i) {
         crypto_kill(c, i);
-    }
+    }}
 
     pthread_mutex_destroy(&c->tcp_mutex);
     pthread_mutex_destroy(&c->connections_mutex);

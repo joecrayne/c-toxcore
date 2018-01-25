@@ -78,9 +78,9 @@ int32_t crypto_memcmp(const void *p1, const void *p2, size_t length)
     size_t i;
     unsigned char d = (unsigned char) 0U;
 
-    for (i = 0U; i < length; i++) {
+      {for (i = 0U; i < length; i++) {
         d |= b1[i] ^ b2[i];
-    }
+    }}
 
     return (1 & ((d - 1) >> 8)) - 1;
 #endif

@@ -171,9 +171,7 @@ static int add_accepted(TCP_Server *TCP_server, const TCP_Secure_Connection *con
 
         index = TCP_server->num_accepted_connections;
     } else {
-        uint32_t i;
-
-        for (i = TCP_server->size_accepted_connections; i != 0; --i) {
+        for (uint32_t i = TCP_server->size_accepted_connections; i != 0; --i) {
             if (TCP_server->accepted_connection_array[i - 1].status == TCP_STATUS_NO_STATUS) {
                 index = i - 1;
                 break;
@@ -523,9 +521,7 @@ static int kill_accepted(TCP_Server *TCP_server, int index)
         return -1;
     }
 
-    uint32_t i;
-
-    for (i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
+    for (uint32_t i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
         rm_connection_index(TCP_server, &TCP_server->accepted_connection_array[index], i);
     }
 
@@ -645,7 +641,6 @@ static int send_disconnect_notification(TCP_Secure_Connection *con, uint8_t id)
  */
 static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, const uint8_t *public_key)
 {
-    uint32_t i;
     uint32_t index = ~0;
     TCP_Secure_Connection *con = &TCP_server->accepted_connection_array[con_id];
 
@@ -658,7 +653,7 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, const
         return 0;
     }
 
-    for (i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
+    for (uint32_t i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
         if (con->connections[i].status != 0) {
             if (public_key_cmp(public_key, con->connections[i].public_key) == 0) {
                 if (send_routing_response(con, i + NUM_RESERVED_PORTS, public_key) == -1) {
@@ -698,7 +693,7 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, const
         uint32_t other_id = ~0;
         TCP_Secure_Connection *other_conn = &TCP_server->accepted_connection_array[other_index];
 
-        for (i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
+        for (uint32_t i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
             if (other_conn->connections[i].status == 1
                     && public_key_cmp(other_conn->connections[i].public_key, con->public_key) == 0) {
                 other_id = i;
@@ -1074,12 +1069,11 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
         family = TOX_AF_INET;
     }
 
-    uint32_t i;
 #ifdef TCP_SERVER_USE_EPOLL
     struct epoll_event ev;
 #endif
 
-    for (i = 0; i < num_sockets; ++i) {
+    for (uint32_t i = 0; i < num_sockets; ++i) {
         Socket sock = new_listening_TCP_socket(family, ports[i]);
 
         if (sock_valid(sock)) {
@@ -1119,9 +1113,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
 
 static void do_TCP_accept_new(TCP_Server *TCP_server)
 {
-    uint32_t i;
-
-    for (i = 0; i < TCP_server->num_listening_socks; ++i) {
+    for (uint32_t i = 0; i < TCP_server->num_listening_socks; ++i) {
         struct sockaddr_storage addr;
         socklen_t addrlen = sizeof(addr);
         Socket sock;
@@ -1208,18 +1200,14 @@ static void do_confirmed_recv(TCP_Server *TCP_server, uint32_t i)
 
 static void do_TCP_incoming(TCP_Server *TCP_server)
 {
-    uint32_t i;
-
-    for (i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
+    for (uint32_t i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
         do_incoming(TCP_server, i);
     }
 }
 
 static void do_TCP_unconfirmed(TCP_Server *TCP_server)
 {
-    uint32_t i;
-
-    for (i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
+    for (uint32_t i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
         do_unconfirmed(TCP_server, i);
     }
 }
@@ -1234,9 +1222,7 @@ static void do_TCP_confirmed(TCP_Server *TCP_server)
 
     TCP_server->last_run_pinged = unix_time();
 #endif
-    uint32_t i;
-
-    for (i = 0; i < TCP_server->size_accepted_connections; ++i) {
+    for (uint32_t i = 0; i < TCP_server->size_accepted_connections; ++i) {
         TCP_Secure_Connection *conn = &TCP_server->accepted_connection_array[i];
 
         if (conn->status != TCP_STATUS_CONFIRMED) {
@@ -1291,7 +1277,7 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
     while ((nfds = epoll_wait(TCP_server->efd, events, MAX_EVENTS, 0)) > 0) {
         int n;
 
-        for (n = 0; n < nfds; ++n) {
+          {for (n = 0; n < nfds; ++n) {
             Socket sock = events[n].data.u64 & 0xFFFFFFFF;
             int status = (events[n].data.u64 >> 32) & 0xFF, index = (events[n].data.u64 >> 40);
 
@@ -1397,7 +1383,7 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
                     break;
                 }
             }
-        }
+        }}
     }
 
 #undef MAX_EVENTS
@@ -1422,9 +1408,7 @@ void do_TCP_server(TCP_Server *TCP_server)
 
 void kill_TCP_server(TCP_Server *TCP_server)
 {
-    uint32_t i;
-
-    for (i = 0; i < TCP_server->num_listening_socks; ++i) {
+    for (uint32_t i = 0; i < TCP_server->num_listening_socks; ++i) {
         kill_sock(TCP_server->socks_listening[i]);
     }
 

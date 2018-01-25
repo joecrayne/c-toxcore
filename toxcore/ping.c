@@ -245,7 +245,7 @@ static int in_list(const Client_data *list, uint16_t length, const uint8_t *publ
 {
     unsigned int i;
 
-    for (i = 0; i < length; ++i) {
+      {for (i = 0; i < length; ++i) {
         if (id_equal(list[i].public_key, public_key)) {
             const IPPTsPng *ipptp;
 
@@ -259,7 +259,7 @@ static int in_list(const Client_data *list, uint16_t length, const uint8_t *publ
                 return 1;
             }
         }
-    }
+    }}
 
     return 0;
 }
@@ -297,7 +297,7 @@ int32_t ping_add(Ping *ping, const uint8_t *public_key, IP_Port ip_port)
 
     unsigned int i;
 
-    for (i = 0; i < MAX_TO_PING; ++i) {
+      {for (i = 0; i < MAX_TO_PING; ++i) {
         if (!ip_isset(&ping->to_ping[i].ip_port.ip)) {
             memcpy(ping->to_ping[i].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
             ipport_copy(&ping->to_ping[i].ip_port, &ip_port);
@@ -307,7 +307,7 @@ int32_t ping_add(Ping *ping, const uint8_t *public_key, IP_Port ip_port)
         if (public_key_cmp(ping->to_ping[i].public_key, public_key) == 0) {
             return -1;
         }
-    }
+    }}
 
     if (add_to_list(ping->to_ping, MAX_TO_PING, public_key, ip_port, dht_get_self_public_key(ping->dht))) {
         return 0;
@@ -332,7 +332,7 @@ void ping_iterate(Ping *ping)
 
     unsigned int i;
 
-    for (i = 0; i < MAX_TO_PING; ++i) {
+      {for (i = 0; i < MAX_TO_PING; ++i) {
         if (!ip_isset(&ping->to_ping[i].ip_port.ip)) {
             break;
         }
@@ -343,7 +343,7 @@ void ping_iterate(Ping *ping)
 
         ping_send_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].public_key);
         ip_reset(&ping->to_ping[i].ip_port.ip);
-    }
+    }}
 
     if (i != 0) {
         ping->last_to_ping = unix_time();

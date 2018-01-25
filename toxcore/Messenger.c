@@ -76,9 +76,7 @@ static int realloc_friendlist(Messenger *m, uint32_t num)
  */
 int32_t getfriend_id(const Messenger *m, const uint8_t *real_pk)
 {
-    uint32_t i;
-
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status > 0) {
             if (id_equal(real_pk, m->friendlist[i].real_pk)) {
                 return i;
@@ -124,9 +122,8 @@ static uint16_t address_checksum(const uint8_t *address, uint32_t len)
 {
     uint8_t checksum[2] = {0};
     uint16_t check;
-    uint32_t i;
 
-    for (i = 0; i < len; ++i) {
+    for (uint32_t i = 0; i < len; ++i) {
         checksum[i % 2] ^= address[i];
     }
 
@@ -185,9 +182,7 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
         return FAERR_NOMEM;
     }
 
-    uint32_t i;
-
-    for (i = 0; i <= m->numfriends; ++i) {
+    for (uint32_t i = 0; i <= m->numfriends; ++i) {
         if (m->friendlist[i].status == NOFRIEND) {
             m->friendlist[i].status = status;
             m->friendlist[i].friendcon_id = friendcon_id;
@@ -426,11 +421,11 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     memset(&m->friendlist[friendnumber], 0, sizeof(Friend));
     uint32_t i;
 
-    for (i = m->numfriends; i != 0; --i) {
+      {for (i = m->numfriends; i != 0; --i) {
         if (m->friendlist[i - 1].status != NOFRIEND) {
             break;
         }
-    }
+    }}
 
     m->numfriends = i;
 
@@ -585,9 +580,8 @@ int setname(Messenger *m, const uint8_t *name, uint16_t length)
     }
 
     m->name_length = length;
-    uint32_t i;
 
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         m->friendlist[i].name_sent = 0;
     }
 
@@ -656,9 +650,7 @@ int m_set_statusmessage(Messenger *m, const uint8_t *status, uint16_t length)
 
     m->statusmessage_length = length;
 
-    uint32_t i;
-
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         m->friendlist[i].statusmessage_sent = 0;
     }
 
@@ -676,9 +668,8 @@ int m_set_userstatus(Messenger *m, uint8_t status)
     }
 
     m->userstatus = (USERSTATUS)status;
-    uint32_t i;
 
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         m->friendlist[i].userstatus_sent = 0;
     }
 
@@ -1149,11 +1140,11 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
 
     uint32_t i;
 
-    for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
+      {for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
         if (m->friendlist[friendnumber].file_sending[i].status == FILESTATUS_NONE) {
             break;
         }
-    }
+    }}
 
     if (i == MAX_CONCURRENT_FILE_PIPES) {
         return -3;
@@ -1514,9 +1505,9 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdat
         free_slots -= MIN_SLOTS_FREE;
     }
 
-    unsigned int i, num = m->friendlist[friendnumber].num_sending_files;
+    unsigned int num = m->friendlist[friendnumber].num_sending_files;
 
-    for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
+    for (unsigned i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
         struct File_Transfers *ft = &m->friendlist[friendnumber].file_sending[i];
 
         if (ft->status != FILESTATUS_NONE) {
@@ -1591,10 +1582,8 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdat
  */
 static void break_files(const Messenger *m, int32_t friendnumber)
 {
-    uint32_t i;
-
     // TODO(irungentoo): Inform the client which file transfers get killed with a callback?
-    for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
+    for (uint32_t i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
         if (m->friendlist[friendnumber].file_sending[i].status != FILESTATUS_NONE) {
             m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_NONE;
         }
@@ -2053,8 +2042,6 @@ void kill_messenger(Messenger *m)
         return;
     }
 
-    uint32_t i;
-
     if (m->tcp_server) {
         kill_TCP_server(m->tcp_server);
     }
@@ -2067,7 +2054,7 @@ void kill_messenger(Messenger *m)
     kill_DHT(m->dht);
     kill_networking(m->net);
 
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         clear_receipts(m, i);
     }
 
@@ -2426,10 +2413,9 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
 
 static void do_friends(Messenger *m, void *userdata)
 {
-    uint32_t i;
-    uint64_t temp_time = unix_time();
+    const uint64_t temp_time = unix_time();
 
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status == FRIEND_ADDED) {
             int fr = send_friend_request_packet(m->fr_c, m->friendlist[i].friendcon_id, m->friendlist[i].friendrequest_nospam,
                                                 m->friendlist[i].info,
@@ -2510,9 +2496,9 @@ static char *id_to_string(const uint8_t *pk, char *id_str, size_t length)
         return id_str;
     }
 
-    for (uint32_t i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; i++) {
+      {for (uint32_t i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; i++) {
         sprintf(&id_str[i * 2], "%02X", pk[i]);
-    }
+    }}
 
     id_str[CRYPTO_PUBLIC_KEY_SIZE * 2] = 0;
     return id_str;
@@ -2545,9 +2531,7 @@ void do_messenger(Messenger *m, void *userdata)
     if (m->has_added_relays == 0) {
         m->has_added_relays = 1;
 
-        int i;
-
-        for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
+        for (int i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
             add_tcp_relay(m->net_crypto, m->loaded_relays[i].ip_port, m->loaded_relays[i].public_key);
         }
 
@@ -2581,14 +2565,13 @@ void do_messenger(Messenger *m, void *userdata)
 
     if (unix_time() > m->lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
         m->lastdump = unix_time();
-        uint32_t client, last_pinged;
+        uint32_t last_pinged;
 
-        for (client = 0; client < LCLIENT_LIST; client++) {
+        for (uint32_t client = 0; client < LCLIENT_LIST; client++) {
             const Client_data *cptr = dht_get_close_client(m->dht, client);
-            const IPPTsPng *assoc = NULL;
-            uint32_t a;
+            const IPPTsPng *assoc = &cptr->assoc4;
 
-            for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6) {
+            for (uint32_t a = 0; a < 2; a++, assoc = &cptr->assoc6) {
                 if (ip_isset(&assoc->ip_port.ip)) {
                     last_pinged = m->lastdump - assoc->last_pinged;
 
@@ -2607,14 +2590,12 @@ void do_messenger(Messenger *m, void *userdata)
         }
 
 
-        uint32_t friend_idx, dhtfriend;
-
         /* dht contains additional "friends" (requests) */
         uint32_t num_dhtfriends = dht_get_num_friends(m->dht);
         VLA(int32_t, m2dht, num_dhtfriends);
         VLA(int32_t, dht2m, num_dhtfriends);
 
-        for (friend_idx = 0; friend_idx < num_dhtfriends; friend_idx++) {
+        for (uint32_t friend_idx = 0; friend_idx < num_dhtfriends; friend_idx++) {
             m2dht[friend_idx] = -1;
             dht2m[friend_idx] = -1;
 
@@ -2622,7 +2603,7 @@ void do_messenger(Messenger *m, void *userdata)
                 continue;
             }
 
-            for (dhtfriend = 0; dhtfriend < dht_get_num_friends(m->dht); dhtfriend++) {
+            for (uint32_t dhtfriend = 0; dhtfriend < dht_get_num_friends(m->dht); dhtfriend++) {
                 if (id_equal(m->friendlist[friend_idx].real_pk, dht_get_friend_public_key(m->dht, dhtfriend))) {
                     m2dht[friend_idx] = dhtfriend;
                     break;
@@ -2630,7 +2611,7 @@ void do_messenger(Messenger *m, void *userdata)
             }
         }
 
-        for (friend_idx = 0; friend_idx < num_dhtfriends; friend_idx++) {
+        for (uint32_t friend_idx = 0; friend_idx < num_dhtfriends; friend_idx++) {
             if (m2dht[friend_idx] >= 0) {
                 dht2m[m2dht[friend_idx]] = friend_idx;
             }
@@ -2640,10 +2621,10 @@ void do_messenger(Messenger *m, void *userdata)
             LOGGER_TRACE(m->log, "Friend num in DHT %u != friend num in msger %u\n", dht_get_num_friends(m->dht), m->numfriends);
         }
 
-        Friend *msgfptr;
         DHT_Friend *dhtfptr;
 
-        for (friend_idx = 0; friend_idx < num_dhtfriends; friend_idx++) {
+        for (uint32_t friend_idx = 0; friend_idx < num_dhtfriends; friend_idx++) {
+            const Friend *msgfptr;
             if (dht2m[friend_idx] >= 0) {
                 msgfptr = &m->friendlist[dht2m[friend_idx]];
             } else {
@@ -2663,12 +2644,11 @@ void do_messenger(Messenger *m, void *userdata)
                              id_to_string(dhtfptr->public_key, id_str, sizeof(id_str)));
             }
 
-            for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
+            for (uint32_t client = 0; client < MAX_FRIEND_CLIENTS; client++) {
                 Client_data *cptr = &dhtfptr->client_list[client];
-                IPPTsPng *assoc = NULL;
-                uint32_t a;
+                IPPTsPng *assoc = &cptr->assoc4;
 
-                for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6) {
+                for (uint32_t a = 0; a < 2; a++, assoc = &cptr->assoc6) {
                     if (ip_isset(&assoc->ip_port.ip)) {
                         last_pinged = m->lastdump - assoc->last_pinged;
 
@@ -2790,11 +2770,10 @@ static uint8_t *friend_save(const struct SAVED_FRIEND *temp, uint8_t *data)
 
 static uint32_t friends_list_save(const Messenger *m, uint8_t *data)
 {
-    uint32_t i;
     uint32_t num = 0;
     uint8_t *cur_data = data;
 
-    for (i = 0; i < m->numfriends; i++) {
+    for (uint32_t i = 0; i < m->numfriends; i++) {
         if (m->friendlist[i].status > 0) {
             struct SAVED_FRIEND temp = { 0 };
             temp.status = m->friendlist[i].status;
@@ -2874,10 +2853,9 @@ static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
     }
 
     uint32_t num = length / friend_size();
-    uint32_t i;
     const uint8_t *cur_data = data;
 
-    for (i = 0; i < num; ++i) {
+    for (uint32_t i = 0; i < num; ++i) {
         struct SAVED_FRIEND temp = { 0 };
         const uint8_t *next_data = friend_load(&temp, cur_data);
         assert(next_data - cur_data == friend_size());
@@ -3087,9 +3065,9 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
                 break;
             }
 
-            int i, num = unpack_nodes(nodes, NUM_SAVED_PATH_NODES, 0, data, length, 0);
+            const int num = unpack_nodes(nodes, NUM_SAVED_PATH_NODES, 0, data, length, 0);
 
-            for (i = 0; i < num; ++i) {
+            for (int i = 0; i < num; ++i) {
                 onion_add_bs_path_node(m->onion_c, nodes[i].ip_port, nodes[i].public_key);
             }
 
@@ -3140,9 +3118,8 @@ int messenger_load(Messenger *m, const uint8_t *data, uint32_t length)
 uint32_t count_friendlist(const Messenger *m)
 {
     uint32_t ret = 0;
-    uint32_t i;
 
-    for (i = 0; i < m->numfriends; i++) {
+    for (uint32_t i = 0; i < m->numfriends; i++) {
         if (m->friendlist[i].status > 0) {
             ret++;
         }
@@ -3166,10 +3143,9 @@ uint32_t copy_friendlist(Messenger const *m, uint32_t *out_list, uint32_t list_s
         return 0;
     }
 
-    uint32_t i;
     uint32_t ret = 0;
 
-    for (i = 0; i < m->numfriends; i++) {
+    for (uint32_t i = 0; i < m->numfriends; i++) {
         if (ret >= list_size) {
             break; /* Abandon ship */
         }

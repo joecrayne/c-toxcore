@@ -251,12 +251,12 @@ static int in_entries(const Onion_Announce *onion_a, const uint8_t *public_key)
 {
     unsigned int i;
 
-    for (i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
+      {for (i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
         if (!is_timeout(onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)
                 && public_key_cmp(onion_a->entries[i].public_key, public_key) == 0) {
             return i;
         }
-    }
+    }}
 
     return -1;
 }
@@ -309,16 +309,16 @@ static void sort_onion_announce_list(Onion_Announce_Entry *list, unsigned int le
     // comparison function can use it as the base of comparison.
     VLA(Cmp_data, cmp_list, length);
 
-    for (uint32_t i = 0; i < length; i++) {
+      {for (uint32_t i = 0; i < length; i++) {
         cmp_list[i].base_public_key = comp_public_key;
         cmp_list[i].entry = list[i];
-    }
+    }}
 
     qsort(cmp_list, length, sizeof(Cmp_data), cmp_entry);
 
-    for (uint32_t i = 0; i < length; i++) {
+      {for (uint32_t i = 0; i < length; i++) {
         list[i] = cmp_list[i].entry;
-    }
+    }}
 }
 
 /* add entry to entries list
@@ -332,14 +332,12 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const ui
 
     int pos = in_entries(onion_a, public_key);
 
-    unsigned int i;
-
     if (pos == -1) {
-        for (i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
+        {for (unsigned i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
             if (is_timeout(onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)) {
                 pos = i;
             }
-        }
+        }}
     }
 
     if (pos == -1) {

@@ -139,9 +139,7 @@ static int realloc_friendconns(Friend_Connections *fr_c, uint32_t num)
  */
 static int create_friend_conn(Friend_Connections *fr_c)
 {
-    uint32_t i;
-
-    for (i = 0; i < fr_c->num_cons; ++i) {
+    for (uint32_t i = 0; i < fr_c->num_cons; ++i) {
         if (fr_c->conns[i].status == FRIENDCONN_STATUS_NONE) {
             return i;
         }
@@ -169,9 +167,9 @@ static int wipe_friend_conn(Friend_Connections *fr_c, int friendcon_id)
         return -1;
     }
 
-    uint32_t i;
     memset(&fr_c->conns[friendcon_id], 0, sizeof(Friend_Conn));
 
+    uint32_t i;
     for (i = fr_c->num_cons; i != 0; --i) {
         if (fr_c->conns[i - 1].status != FRIENDCONN_STATUS_NONE) {
             break;
@@ -200,9 +198,7 @@ static Friend_Conn *get_conn(const Friend_Connections *fr_c, int friendcon_id)
  */
 int getfriend_conn_id_pk(Friend_Connections *fr_c, const uint8_t *real_pk)
 {
-    uint32_t i;
-
-    for (i = 0; i < fr_c->num_cons; ++i) {
+    for (uint32_t i = 0; i < fr_c->num_cons; ++i) {
         Friend_Conn *friend_con = get_conn(fr_c, i);
 
         if (friend_con) {
@@ -237,11 +233,9 @@ int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_
         }
     }
 
-    unsigned int i;
-
     uint16_t index = friend_con->tcp_relay_counter % FRIEND_MAX_STORED_TCP_RELAYS;
 
-    for (i = 0; i < FRIEND_MAX_STORED_TCP_RELAYS; ++i) {
+    for (unsigned i = 0; i < FRIEND_MAX_STORED_TCP_RELAYS; ++i) {
         if (friend_con->tcp_relays[i].ip_port.ip.family != 0
                 && public_key_cmp(friend_con->tcp_relays[i].public_key, public_key) == 0) {
             memset(&friend_con->tcp_relays[i], 0, sizeof(Node_format));
@@ -264,9 +258,7 @@ static void connect_to_saved_tcp_relays(Friend_Connections *fr_c, int friendcon_
         return;
     }
 
-    unsigned int i;
-
-    for (i = 0; (i < FRIEND_MAX_STORED_TCP_RELAYS) && (number != 0); ++i) {
+    for (unsigned i = 0; (i < FRIEND_MAX_STORED_TCP_RELAYS) && (number != 0); ++i) {
         uint16_t index = (friend_con->tcp_relay_counter - (i + 1)) % FRIEND_MAX_STORED_TCP_RELAYS;
 
         if (friend_con->tcp_relays[index].ip_port.ip.family) {
@@ -292,9 +284,7 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
 
     n = copy_connected_tcp_relays(fr_c->net_crypto, nodes, MAX_SHARED_RELAYS);
 
-    int i;
-
-    for (i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i) {
         /* Associated the relays being sent with this connection.
            On receiving the peer will do the same which will establish the connection. */
         friend_add_tcp_relay(fr_c, friendcon_id, nodes[i].ip_port, nodes[i].public_key);
@@ -412,9 +402,7 @@ static int handle_status(void *object, int number, uint8_t status, void *userdat
     }
 
     if (call_cb) {
-        unsigned int i;
-
-        for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
+        for (unsigned i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
             if (friend_con->callbacks[i].status_callback) {
                 friend_con->callbacks[i].status_callback(
                     friend_con->callbacks[i].callback_object,
@@ -481,24 +469,20 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
 
     if (data[0] == PACKET_ID_SHARE_RELAYS) {
         Node_format nodes[MAX_SHARED_RELAYS];
-        int n;
+        int n = unpack_nodes(nodes, MAX_SHARED_RELAYS, NULL, data + 1, length - 1, 1);
 
-        if ((n = unpack_nodes(nodes, MAX_SHARED_RELAYS, NULL, data + 1, length - 1, 1)) == -1) {
+        if (n == -1) {
             return -1;
         }
 
-        int j;
-
-        for (j = 0; j < n; j++) {
+        for (int j = 0; j < n; j++) {
             friend_add_tcp_relay(fr_c, number, nodes[j].ip_port, nodes[j].public_key);
         }
 
         return 0;
     }
 
-    unsigned int i;
-
-    for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
+    for (unsigned i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
         if (friend_con->callbacks[i].data_callback) {
             friend_con->callbacks[i].data_callback(
                 friend_con->callbacks[i].callback_object,
@@ -528,9 +512,7 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
         return -1;
     }
 
-    unsigned int i;
-
-    for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
+    for (unsigned i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
         if (friend_con->callbacks[i].lossy_data_callback) {
             friend_con->callbacks[i].lossy_data_callback(
                 friend_con->callbacks[i].callback_object,
@@ -910,9 +892,9 @@ static void LANdiscovery(Friend_Connections *fr_c)
         lan_discovery_send(net_htons(TOX_PORT_DEFAULT), fr_c->dht);
 
         // And check some extra ports
-        for (uint16_t port = first; port < last; port++) {
+          {for (uint16_t port = first; port < last; port++) {
             lan_discovery_send(net_htons(port), fr_c->dht);
-        }
+        }}
 
         // Don't include default port in port range
         fr_c->next_LANport = last != TOX_PORTRANGE_TO ? last : TOX_PORTRANGE_FROM + 1;
@@ -923,10 +905,9 @@ static void LANdiscovery(Friend_Connections *fr_c)
 /* main friend_connections loop. */
 void do_friend_connections(Friend_Connections *fr_c, void *userdata)
 {
-    uint32_t i;
     uint64_t temp_time = unix_time();
 
-    for (i = 0; i < fr_c->num_cons; ++i) {
+    for (uint32_t i = 0; i < fr_c->num_cons; ++i) {
         Friend_Conn *friend_con = get_conn(fr_c, i);
 
         if (friend_con) {
@@ -980,9 +961,7 @@ void kill_friend_connections(Friend_Connections *fr_c)
         return;
     }
 
-    uint32_t i;
-
-    for (i = 0; i < fr_c->num_cons; ++i) {
+    for (uint32_t i = 0; i < fr_c->num_cons; ++i) {
         kill_friend_connection(fr_c, i);
     }
 
