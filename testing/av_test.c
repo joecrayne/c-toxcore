@@ -210,11 +210,15 @@ static void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
     free(rb_write(cc->arb, f));
     pthread_mutex_unlock(cc->arb_mutex);
 }
-static void t_toxav_bit_rate_status_cb(ToxAV *av, uint32_t friend_number,
-                                       uint32_t audio_bit_rate, uint32_t video_bit_rate,
-                                       void *user_data)
+static void t_toxav_audio_bit_rate_cb(ToxAV *av, uint32_t friend_number,
+                                      uint32_t audio_bit_rate, void *user_data)
 {
-    printf("Suggested bit rates: audio: %d video: %d\n", audio_bit_rate, video_bit_rate);
+    printf("Suggested bit rate: audio: %d\n", audio_bit_rate);
+}
+static void t_toxav_video_bit_rate_cb(ToxAV *av, uint32_t friend_number,
+                                      uint32_t video_bit_rate, void *user_data)
+{
+    printf("Suggested bit rate: video: %d\n", video_bit_rate);
 }
 static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length,
                                        void *userdata)
@@ -231,27 +235,29 @@ static void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceC
     Tox *Alice;
     Tox *Bob;
 
-    struct Tox_Options opts;
-    tox_options_default(&opts);
+    struct Tox_Options *opts = tox_options_new(NULL);
+    assert(opts != NULL);
 
-    opts.end_port = 0;
-    opts.ipv6_enabled = false;
+    tox_options_set_end_port(opts, 0);
+    tox_options_set_ipv6_enabled(opts, false);
 
     {
         TOX_ERR_NEW error;
 
-        opts.start_port = 33445;
-        *bootstrap = tox_new(&opts, &error);
+        tox_options_set_start_port(opts, 33445);
+        *bootstrap = tox_new(opts, &error);
         assert(error == TOX_ERR_NEW_OK);
 
-        opts.start_port = 33455;
-        Alice = tox_new(&opts, &error);
+        tox_options_set_start_port(opts, 33455);
+        Alice = tox_new(opts, &error);
         assert(error == TOX_ERR_NEW_OK);
 
-        opts.start_port = 33465;
-        Bob = tox_new(&opts, &error);
+        tox_options_set_start_port(opts, 33465);
+        Bob = tox_new(opts, &error);
         assert(error == TOX_ERR_NEW_OK);
     }
+
+    tox_options_free(opts);
 
     printf("Created 3 instances of Tox\n");
     printf("Preparing network...\n");
@@ -300,14 +306,16 @@ static void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceC
     /* Alice */
     toxav_callback_call(*AliceAV, t_toxav_call_cb, AliceCC);
     toxav_callback_call_state(*AliceAV, t_toxav_call_state_cb, AliceCC);
-    toxav_callback_bit_rate_status(*AliceAV, t_toxav_bit_rate_status_cb, AliceCC);
+    toxav_callback_audio_bit_rate(*AliceAV, t_toxav_audio_bit_rate_cb, AliceCC);
+    toxav_callback_video_bit_rate(*AliceAV, t_toxav_video_bit_rate_cb, AliceCC);
     toxav_callback_video_receive_frame(*AliceAV, t_toxav_receive_video_frame_cb, AliceCC);
     toxav_callback_audio_receive_frame(*AliceAV, t_toxav_receive_audio_frame_cb, AliceCC);
 
     /* Bob */
     toxav_callback_call(*BobAV, t_toxav_call_cb, BobCC);
     toxav_callback_call_state(*BobAV, t_toxav_call_state_cb, BobCC);
-    toxav_callback_bit_rate_status(*BobAV, t_toxav_bit_rate_status_cb, BobCC);
+    toxav_callback_audio_bit_rate(*BobAV, t_toxav_audio_bit_rate_cb, BobCC);
+    toxav_callback_video_bit_rate(*BobAV, t_toxav_video_bit_rate_cb, BobCC);
     toxav_callback_video_receive_frame(*BobAV, t_toxav_receive_video_frame_cb, BobCC);
     toxav_callback_audio_receive_frame(*BobAV, t_toxav_receive_audio_frame_cb, BobCC);
 
@@ -438,8 +446,10 @@ int main(int argc, char **argv)
     long audio_out_dev_idx = -1;
 
     int32_t audio_frame_duration = 20;
+#if 0
     // TODO(mannol): Put this to use.
     int32_t video_frame_duration = 10;
+#endif
 
     /* Parse settings */
 CHECK_ARG:
@@ -465,6 +475,8 @@ CHECK_ARG:
             vf_name = optarg;
             goto CHECK_ARG;
 
+#if 0
+
         case 'x': {
             char *d;
             video_frame_duration = strtol(optarg, &d, 10);
@@ -476,6 +488,8 @@ CHECK_ARG:
 
             goto CHECK_ARG;
         }
+
+#endif
 
         case 'o': {
             char *d;

@@ -1,9 +1,11 @@
+load("//tools:no_undefined.bzl", "cc_library")
+
 cc_library(
     name = "misc_tools",
     hdrs = [
         "misc_tools.c",
     ],
-    visibility = ["//visibility:public"],
+    visibility = ["//c-toxcore:__subpackages__"],
 )
 
 cc_binary(
@@ -21,6 +23,22 @@ cc_binary(
     deps = [
         ":misc_tools",
         "//c-toxcore/toxcore",
+    ],
+)
+
+cc_binary(
+    name = "av_test",
+    srcs = ["av_test.c"],
+    linkopts = [
+        "-lopencv_highgui",
+        "-lopencv_core",
+    ],
+    deps = [
+        "//c-toxcore/toxav",
+        "//c-toxcore/toxav:monolith",
+        "//c-toxcore/toxcore",
+        "@portaudio",
+        "@sndfile",
     ],
 )
 
