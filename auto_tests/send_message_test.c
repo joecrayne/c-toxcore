@@ -41,7 +41,7 @@ static void test_send_message()
 {
     printf("initialising 2 toxes\n");
     uint32_t index[] = { 1, 2 };
-    time_t con_time = 0, cur_time = time(nullptr);
+    const time_t cur_time = time(nullptr);
     Tox *const tox1 = tox_new_log(nullptr, nullptr, &index[0]);
     Tox *const tox2 = tox_new_log(nullptr, nullptr, &index[1]);
 
@@ -61,46 +61,43 @@ static void test_send_message()
 
     tox_bootstrap(tox2, "localhost", dht_port, dht_key, nullptr);
 
-    uint8_t off = 1;
-
-    while (1) {
+    while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
+           tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
-        if (tox_self_get_connection_status(tox1) && tox_self_get_connection_status(tox2)) {
-            if (off) {
-                printf("toxes are online, took %ld seconds\n", time(nullptr) - cur_time);
-                con_time = time(nullptr);
-                off = 0;
-            }
+        c_sleep(200);
+    }
 
-            if (tox_friend_get_connection_status(tox2, 0, nullptr) == TOX_CONNECTION_UDP) {
-                break;
-            }
-        }
+    printf("toxes are online, took %ld seconds\n", time(nullptr) - cur_time);
+    const time_t con_time = time(nullptr);
+
+    while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP &&
+           tox_friend_get_connection_status(tox2, 0, nullptr) != TOX_CONNECTION_UDP) {
+        tox_iterate(tox1, nullptr);
+        tox_iterate(tox2, nullptr);
 
         c_sleep(200);
     }
 
     printf("tox clients connected took %ld seconds\n", time(nullptr) - con_time);
+
+    tox_callback_friend_message(tox2, &print_message);
+
     uint8_t msgs[TOX_MAX_MESSAGE_LENGTH + 1];
     memset(msgs, 'G', sizeof(msgs));
 
     TOX_ERR_FRIEND_SEND_MESSAGE errm;
-    tox_friend_send_message(tox2, 0, TOX_MESSAGE_TYPE_NORMAL, msgs, TOX_MAX_MESSAGE_LENGTH + 1, &errm);
-    ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_TOO_LONG, "TOX_MAX_MESSAGE_LENGTH is too small\n");
+    tox_friend_send_message(tox1, 0, TOX_MESSAGE_TYPE_NORMAL, msgs, TOX_MAX_MESSAGE_LENGTH + 1, &errm);
+    ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_TOO_LONG, "TOX_MAX_MESSAGE_LENGTH is too small? error=%d", errm);
 
-    tox_friend_send_message(tox2, 0, TOX_MESSAGE_TYPE_NORMAL, msgs, TOX_MAX_MESSAGE_LENGTH, &errm);
-    ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_OK, "TOX_MAX_MESSAGE_LENGTH is too big\n");
+    tox_friend_send_message(tox1, 0, TOX_MESSAGE_TYPE_NORMAL, msgs, TOX_MAX_MESSAGE_LENGTH, &errm);
+    ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_OK, "TOX_MAX_MESSAGE_LENGTH is too big? error=%d", errm);
 
-    while (1) {
-        messages_received = 0;
+    messages_received = 0;
+    while (!messages_received) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
-
-        if (messages_received) {
-            break;
-        }
 
         c_sleep(200);
     }
