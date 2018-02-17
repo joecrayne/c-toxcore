@@ -75,41 +75,6 @@ static void print_status_m_change(Tox *tox, uint32_t friend_number, const uint8_
     }
 }
 
-static uint32_t typing_changes;
-
-static void print_typingchange(Tox *m, uint32_t friendnumber, bool typing, void *userdata)
-{
-    if (*((uint32_t *)userdata) != 974536) {
-        return;
-    }
-
-    if (!typing) {
-        typing_changes = 1;
-    } else {
-        typing_changes = 2;
-    }
-}
-
-static uint32_t custom_packet;
-
-static void handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *data, size_t len, void *object)
-{
-    uint8_t number = *((uint32_t *)object);
-
-    if (len != TOX_MAX_CUSTOM_PACKET_SIZE) {
-        return;
-    }
-
-    VLA(uint8_t, f_data, len);
-    memset(f_data, number, len);
-
-    if (memcmp(f_data, data, len) == 0) {
-        ++custom_packet;
-    } else {
-        ck_abort_msg("Custom packet fail. %u", number);
-    }
-}
-
 static unsigned int connected_t1;
 static void tox_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *user_data)
 {
@@ -275,93 +240,6 @@ START_TEST(test_few_clients)
     tox_friend_get_status_message(tox3, 0, temp_status_m, nullptr);
     ck_assert_msg(memcmp(temp_status_m, "Installing Gentoo", sizeof("Installing Gentoo")) == 0,
                   "status message not correct");
-
-    tox_callback_friend_typing(tox2, &print_typingchange);
-    tox_self_set_typing(tox3, 0, 1, nullptr);
-
-    while (1) {
-        typing_changes = 0;
-        tox_iterate(tox1, &to_compare);
-        tox_iterate(tox2, &to_compare);
-        tox_iterate(tox3, &to_compare);
-
-        if (typing_changes == 2) {
-            break;
-        }
-
-        ck_assert_msg(typing_changes == 0, "Typing fail");
-
-        c_sleep(50);
-    }
-
-    ck_assert_msg(tox_friend_get_typing(tox2, 0, nullptr) == 1, "Typing fail");
-    tox_self_set_typing(tox3, 0, 0, nullptr);
-
-    while (1) {
-        typing_changes = 0;
-        tox_iterate(tox1, &to_compare);
-        tox_iterate(tox2, &to_compare);
-        tox_iterate(tox3, &to_compare);
-
-        if (typing_changes == 1) {
-            break;
-        }
-
-        ck_assert_msg(typing_changes == 0, "Typing fail");
-
-        c_sleep(50);
-    }
-
-    TOX_ERR_FRIEND_QUERY err_t;
-    ck_assert_msg(tox_friend_get_typing(tox2, 0, &err_t) == 0, "Typing fail");
-    ck_assert_msg(err_t == TOX_ERR_FRIEND_QUERY_OK, "Typing fail");
-
-    uint32_t packet_number = 160;
-    tox_callback_friend_lossless_packet(tox3, &handle_custom_packet);
-    uint8_t data_c[TOX_MAX_CUSTOM_PACKET_SIZE + 1];
-    memset(data_c, ((uint8_t)packet_number), sizeof(data_c));
-    int ret = tox_friend_send_lossless_packet(tox2, 0, data_c, sizeof(data_c), nullptr);
-    ck_assert_msg(ret == 0, "tox_friend_send_lossless_packet bigger fail %i", ret);
-    ret = tox_friend_send_lossless_packet(tox2, 0, data_c, TOX_MAX_CUSTOM_PACKET_SIZE, nullptr);
-    ck_assert_msg(ret == 1, "tox_friend_send_lossless_packet fail %i", ret);
-
-    while (1) {
-        custom_packet = 0;
-        tox_iterate(tox1, &to_compare);
-        tox_iterate(tox2, &to_compare);
-        tox_iterate(tox3, &packet_number);
-
-        if (custom_packet == 1) {
-            break;
-        }
-
-        ck_assert_msg(custom_packet == 0, "Lossless packet fail");
-
-        c_sleep(50);
-    }
-
-    packet_number = 200;
-    tox_callback_friend_lossy_packet(tox3, &handle_custom_packet);
-    memset(data_c, ((uint8_t)packet_number), sizeof(data_c));
-    ret = tox_friend_send_lossy_packet(tox2, 0, data_c, sizeof(data_c), nullptr);
-    ck_assert_msg(ret == 0, "tox_friend_send_lossy_packet bigger fail %i", ret);
-    ret = tox_friend_send_lossy_packet(tox2, 0, data_c, TOX_MAX_CUSTOM_PACKET_SIZE, nullptr);
-    ck_assert_msg(ret == 1, "tox_friend_send_lossy_packet fail %i", ret);
-
-    while (1) {
-        custom_packet = 0;
-        tox_iterate(tox1, &to_compare);
-        tox_iterate(tox2, &to_compare);
-        tox_iterate(tox3, &packet_number);
-
-        if (custom_packet == 1) {
-            break;
-        }
-
-        ck_assert_msg(custom_packet == 0, "lossy packet fail");
-
-        c_sleep(50);
-    }
 
     printf("test_few_clients succeeded, took %llu seconds\n", time(nullptr) - cur_time);
 

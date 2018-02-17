@@ -54,6 +54,7 @@ Tox *tox_new_log(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_d
 
     if (log_options == nullptr) {
         log_options = tox_options_new(nullptr);
+        tox_options_set_local_discovery_enabled(log_options, false);
     }
 
     assert(log_options != nullptr);
