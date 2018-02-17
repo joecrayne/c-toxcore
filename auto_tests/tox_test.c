@@ -48,29 +48,8 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
         tox_friend_add_norequest(m, public_key, nullptr);
     }
 }
-static uint32_t messages_received;
-
-static void print_message(Tox *m, uint32_t friendnumber, TOX_MESSAGE_TYPE type, const uint8_t *string, size_t length,
-                          void *userdata)
-{
-    if (*((uint32_t *)userdata) != 974536) {
-        return;
-    }
-
-    if (type != TOX_MESSAGE_TYPE_NORMAL) {
-        ck_abort_msg("Bad type");
-    }
-
-    uint8_t cmp_msg[TOX_MAX_MESSAGE_LENGTH];
-    memset(cmp_msg, 'G', sizeof(cmp_msg));
-
-    if (length == TOX_MAX_MESSAGE_LENGTH && memcmp(string, cmp_msg, sizeof(cmp_msg)) == 0) {
-        ++messages_received;
-    }
-}
 
 static uint32_t name_changes;
-
 static void print_nickchange(Tox *m, uint32_t friendnumber, const uint8_t *string, size_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536) {
@@ -129,8 +108,6 @@ static void handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *dat
     } else {
         ck_abort_msg("Custom packet fail. %u", number);
     }
-
-    return;
 }
 
 static unsigned int connected_t1;
@@ -214,30 +191,6 @@ START_TEST(test_few_clients)
 
     ck_assert_msg(connected_t1, "Tox1 isn't connected. %u", connected_t1);
     printf("tox clients connected took %llu seconds\n", time(nullptr) - con_time);
-    to_compare = 974536;
-    tox_callback_friend_message(tox3, print_message);
-    uint8_t msgs[TOX_MAX_MESSAGE_LENGTH + 1];
-    memset(msgs, 'G', sizeof(msgs));
-    TOX_ERR_FRIEND_SEND_MESSAGE errm;
-    tox_friend_send_message(tox2, 0, TOX_MESSAGE_TYPE_NORMAL, msgs, TOX_MAX_MESSAGE_LENGTH + 1, &errm);
-    ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_TOO_LONG, "TOX_MAX_MESSAGE_LENGTH is too small\n");
-    tox_friend_send_message(tox2, 0, TOX_MESSAGE_TYPE_NORMAL, msgs, TOX_MAX_MESSAGE_LENGTH, &errm);
-    ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_OK, "TOX_MAX_MESSAGE_LENGTH is too big\n");
-
-    while (1) {
-        messages_received = 0;
-        tox_iterate(tox1, &to_compare);
-        tox_iterate(tox2, &to_compare);
-        tox_iterate(tox3, &to_compare);
-
-        if (messages_received) {
-            break;
-        }
-
-        c_sleep(50);
-    }
-
-    printf("tox clients messaging succeeded\n");
 
     unsigned int save_size1 = tox_get_savedata_size(tox2);
     ck_assert_msg(save_size1 != 0, "save is invalid size %u", save_size1);
