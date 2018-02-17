@@ -37,7 +37,7 @@ static void print_message(Tox *m, uint32_t friendnumber, TOX_MESSAGE_TYPE type, 
     }
 }
 
-static void test_send_message()
+static void test_send_message(void)
 {
     printf("initialising 2 toxes\n");
     uint32_t index[] = { 1, 2 };
