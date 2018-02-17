@@ -72,7 +72,7 @@ static void test_send_message()
     printf("toxes are online, took %ld seconds\n", time(nullptr) - cur_time);
     const time_t con_time = time(nullptr);
 
-    while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP &&
+    while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||
            tox_friend_get_connection_status(tox2, 0, nullptr) != TOX_CONNECTION_UDP) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
