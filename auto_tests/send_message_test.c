@@ -21,10 +21,10 @@
 
 #include "helpers.h"
 
-static uint32_t messages_received;
 static void print_message(Tox *m, uint32_t friendnumber, TOX_MESSAGE_TYPE type, const uint8_t *string, size_t length,
                           void *userdata)
 {
+    bool *message_received = (bool *)userdata;
     if (type != TOX_MESSAGE_TYPE_NORMAL) {
         ck_abort_msg("Bad type");
     }
@@ -33,7 +33,7 @@ static void print_message(Tox *m, uint32_t friendnumber, TOX_MESSAGE_TYPE type, 
     memset(cmp_msg, 'G', sizeof(cmp_msg));
 
     if (length == TOX_MAX_MESSAGE_LENGTH && memcmp(string, cmp_msg, sizeof(cmp_msg)) == 0) {
-        ++messages_received;
+        *message_received = true;
     }
 }
 
@@ -94,10 +94,10 @@ static void test_send_message()
     tox_friend_send_message(tox1, 0, TOX_MESSAGE_TYPE_NORMAL, msgs, TOX_MAX_MESSAGE_LENGTH, &errm);
     ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_OK, "TOX_MAX_MESSAGE_LENGTH is too big? error=%d", errm);
 
-    messages_received = 0;
-    while (!messages_received) {
+    bool message_received = false;
+    while (!message_received) {
         tox_iterate(tox1, nullptr);
-        tox_iterate(tox2, nullptr);
+        tox_iterate(tox2, &message_received);
 
         c_sleep(200);
     }
