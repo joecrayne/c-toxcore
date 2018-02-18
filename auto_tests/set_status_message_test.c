@@ -21,10 +21,12 @@
 
 #include "helpers.h"
 
+#define STATUS_MESSAGE "Installing Gentoo"
+
 static void status_callback(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length, void *user_data)
 {
-    if (length == sizeof("Installing Gentoo") &&
-            memcmp(message, "Installing Gentoo", sizeof("Installing Gentoo")) == 0) {
+    if (length == sizeof(STATUS_MESSAGE) &&
+            memcmp(message, STATUS_MESSAGE, sizeof(STATUS_MESSAGE)) == 0) {
         bool *status_updated = (bool *)user_data;
         *status_updated = true;
     }
@@ -77,7 +79,7 @@ static void test_set_status_message(void)
 
     TOX_ERR_SET_INFO err_n;
     tox_callback_friend_status_message(tox2, status_callback);
-    bool ret = tox_self_set_status_message(tox1, (const uint8_t *)"Installing Gentoo", sizeof("Installing Gentoo"),
+    bool ret = tox_self_set_status_message(tox1, (const uint8_t *)STATUS_MESSAGE, sizeof(STATUS_MESSAGE),
                                            &err_n);
     ck_assert_msg(ret && err_n == TOX_ERR_SET_INFO_OK, "tox_self_set_status_message failed because %u\n", err_n);
 
@@ -89,11 +91,11 @@ static void test_set_status_message(void)
         c_sleep(200);
     }
 
-    ck_assert_msg(tox_friend_get_status_message_size(tox2, 0, nullptr) == sizeof("Installing Gentoo"),
+    ck_assert_msg(tox_friend_get_status_message_size(tox2, 0, nullptr) == sizeof(STATUS_MESSAGE),
                   "status message length not correct");
-    uint8_t cmp_status[sizeof("Installing Gentoo")];
+    uint8_t cmp_status[sizeof(STATUS_MESSAGE)];
     tox_friend_get_status_message(tox2, 0, cmp_status, nullptr);
-    ck_assert_msg(memcmp(cmp_status, "Installing Gentoo", sizeof("Installing Gentoo")) == 0,
+    ck_assert_msg(memcmp(cmp_status, STATUS_MESSAGE, sizeof(STATUS_MESSAGE)) == 0,
                   "status message not correct");
 
     printf("test_set_status_message succeeded, took %ld seconds\n", time(nullptr) - cur_time);

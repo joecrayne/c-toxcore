@@ -21,10 +21,13 @@
 
 #include "helpers.h"
 
-static void handle_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length, void *user_data)
+#define CUSTOM_PACKET_FILLER 160
+
+static void handle_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
+                                   void *user_data)
 {
-	uint8_t cmp_packet[TOX_MAX_CUSTOM_PACKET_SIZE];
-    memset(cmp_packet, 160, sizeof(cmp_packet));
+    uint8_t cmp_packet[TOX_MAX_CUSTOM_PACKET_SIZE];
+    memset(cmp_packet, CUSTOM_PACKET_FILLER, sizeof(cmp_packet));
 
     if (length == TOX_MAX_CUSTOM_PACKET_SIZE && memcmp(data, cmp_packet, sizeof(cmp_packet)) == 0) {
         bool *custom_packet_received = (bool *)user_data;
@@ -57,7 +60,7 @@ static void test_lossless_packet(void)
     tox_bootstrap(tox2, "localhost", dht_port, dht_key, nullptr);
 
     while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
-           tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE) {
+            tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
@@ -68,7 +71,7 @@ static void test_lossless_packet(void)
     const time_t con_time = time(nullptr);
 
     while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||
-           tox_friend_get_connection_status(tox2, 0, nullptr) != TOX_CONNECTION_UDP) {
+            tox_friend_get_connection_status(tox2, 0, nullptr) != TOX_CONNECTION_UDP) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
@@ -79,13 +82,14 @@ static void test_lossless_packet(void)
 
     tox_callback_friend_lossless_packet(tox2, &handle_lossless_packet);
     uint8_t packet[TOX_MAX_CUSTOM_PACKET_SIZE + 1];
-    memset(packet, 160, sizeof(packet));
+    memset(packet, CUSTOM_PACKET_FILLER, sizeof(packet));
     bool ret = tox_friend_send_lossless_packet(tox1, 0, packet, sizeof(packet), nullptr);
     ck_assert_msg(ret == false, "tox_friend_send_lossless_packet bigger fail %i", ret);
     ret = tox_friend_send_lossless_packet(tox1, 0, packet, TOX_MAX_CUSTOM_PACKET_SIZE, nullptr);
     ck_assert_msg(ret == true, "tox_friend_send_lossless_packet fail %i", ret);
 
     bool received_lossless_packet = false;
+
     while (!received_lossless_packet) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, &received_lossless_packet);

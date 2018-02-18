@@ -21,10 +21,12 @@
 
 #include "helpers.h"
 
+#define CUSTOM_PACKET_FILLER 200
+
 static void handle_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length, void *user_data)
 {
     uint8_t cmp_packet[TOX_MAX_CUSTOM_PACKET_SIZE];
-    memset(cmp_packet, 200, sizeof(cmp_packet));
+    memset(cmp_packet, CUSTOM_PACKET_FILLER, sizeof(cmp_packet));
 
     if (length == TOX_MAX_CUSTOM_PACKET_SIZE && memcmp(data, cmp_packet, sizeof(cmp_packet)) == 0) {
         bool *custom_packet_received = (bool *)user_data;
@@ -78,7 +80,7 @@ static void test_lossy_packet(void)
 
     tox_callback_friend_lossy_packet(tox2, &handle_lossy_packet);
     uint8_t packet[TOX_MAX_CUSTOM_PACKET_SIZE + 1];
-    memset(packet, 200, sizeof(packet));
+    memset(packet, CUSTOM_PACKET_FILLER, sizeof(packet));
     bool ret = tox_friend_send_lossy_packet(tox1, 0, packet, sizeof(packet), nullptr);
     ck_assert_msg(ret == false, "tox_friend_send_lossy_packet bigger fail %i", ret);
     ret = tox_friend_send_lossy_packet(tox1, 0, packet, TOX_MAX_CUSTOM_PACKET_SIZE, nullptr);

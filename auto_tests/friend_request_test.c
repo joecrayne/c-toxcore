@@ -21,10 +21,13 @@
 
 #include "helpers.h"
 
+#define FR_MESSAGE "Gentoo"
+
 static void accept_friend_request(Tox *tox, const uint8_t *public_key, const uint8_t *data, size_t length,
                                   void *userdata)
 {
-    ck_assert_msg(length == 7 && memcmp("Gentoo", data, 7) == 0, "unexpected friend request message");
+    ck_assert_msg(length == sizeof(FR_MESSAGE) && memcmp(FR_MESSAGE, data, sizeof(FR_MESSAGE)) == 0,
+                  "unexpected friend request message");
     tox_friend_add_norequest(tox, public_key, nullptr);
 }
 
@@ -62,7 +65,7 @@ static void test_friend_request(void)
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address);
 
-    const uint32_t test = tox_friend_add(tox1, address, (const uint8_t *)"Gentoo", 7, nullptr);
+    const uint32_t test = tox_friend_add(tox1, address, (const uint8_t *)FR_MESSAGE, sizeof(FR_MESSAGE), nullptr);
     ck_assert_msg(test == 0, "Failed to add friend error code: %i", test);
 
     while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||

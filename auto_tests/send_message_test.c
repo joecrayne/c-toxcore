@@ -21,6 +21,8 @@
 
 #include "helpers.h"
 
+#define MESSAGE_FILLER 'G'
+
 static void print_message(Tox *m, uint32_t friendnumber, TOX_MESSAGE_TYPE type, const uint8_t *string, size_t length,
                           void *userdata)
 {
@@ -30,7 +32,7 @@ static void print_message(Tox *m, uint32_t friendnumber, TOX_MESSAGE_TYPE type, 
     }
 
     uint8_t cmp_msg[TOX_MAX_MESSAGE_LENGTH];
-    memset(cmp_msg, 'G', sizeof(cmp_msg));
+    memset(cmp_msg, MESSAGE_FILLER, sizeof(cmp_msg));
 
     if (length == TOX_MAX_MESSAGE_LENGTH && memcmp(string, cmp_msg, sizeof(cmp_msg)) == 0) {
         *message_received = true;
@@ -85,7 +87,7 @@ static void test_send_message(void)
     tox_callback_friend_message(tox2, &print_message);
 
     uint8_t msgs[TOX_MAX_MESSAGE_LENGTH + 1];
-    memset(msgs, 'G', sizeof(msgs));
+    memset(msgs, MESSAGE_FILLER, sizeof(msgs));
 
     TOX_ERR_FRIEND_SEND_MESSAGE errm;
     tox_friend_send_message(tox1, 0, TOX_MESSAGE_TYPE_NORMAL, msgs, TOX_MAX_MESSAGE_LENGTH + 1, &errm);

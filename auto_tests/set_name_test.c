@@ -73,7 +73,7 @@ static void test_set_name(void)
 
     tox_callback_friend_name(tox2, nickchange_callback);
     TOX_ERR_SET_INFO err_n;
-    bool ret = tox_self_set_name(tox2, (const uint8_t *)"Gentoo", sizeof("Gentoo"), &err_n);
+    bool ret = tox_self_set_name(tox1, (const uint8_t *)"Gentoo", sizeof("Gentoo"), &err_n);
     ck_assert_msg(ret && err_n == TOX_ERR_SET_INFO_OK, "tox_self_set_name failed because %u\n", err_n);
 
     bool nickname_updated = false;
@@ -88,7 +88,7 @@ static void test_set_name(void)
     tox_friend_get_name(tox2, 0, temp_name, nullptr);
     ck_assert_msg(memcmp(temp_name, "Gentoo", sizeof("Gentoo")) == 0, "Name not correct");
 
-    printf("test_few_clients succeeded, took %ld seconds\n", time(nullptr) - cur_time);
+    printf("test_set_name succeeded, took %ld seconds\n", time(nullptr) - cur_time);
 
     tox_kill(tox1);
     tox_kill(tox2);
