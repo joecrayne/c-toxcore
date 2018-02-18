@@ -136,9 +136,6 @@ static void test_few_clients(void)
             }
         }
 
-        // 50, not ITERATION_INTERVAL, because this takes much more time when it
-        // has a high iteration interval.
-        // c_sleep(51);
         c_sleep(ITERATION_INTERVAL);
     }
 
