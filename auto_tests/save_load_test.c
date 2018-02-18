@@ -138,7 +138,8 @@ static void test_few_clients(void)
 
         // 50, not ITERATION_INTERVAL, because this takes much more time when it
         // has a high iteration interval.
-        c_sleep(50);
+        // c_sleep(51);
+        c_sleep(ITERATION_INTERVAL);
     }
 
     printf("tox clients connected took %ld seconds\n", time(nullptr) - con_time);
@@ -153,6 +154,8 @@ static void test_few_clients(void)
 
 int main(int argc, char *argv[])
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
+
     test_few_clients();
     return 0;
 }
