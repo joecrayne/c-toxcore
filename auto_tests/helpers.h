@@ -17,6 +17,8 @@
 #define c_sleep(x) usleep(1000 * (x))
 #endif
 
+#define ITERATION_INTERVAL 200
+
 static const char *tox_log_level_name(TOX_LOG_LEVEL level)
 {
     switch (level) {

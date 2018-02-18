@@ -68,7 +68,7 @@ static void test_send_message(void)
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
-        c_sleep(200);
+        c_sleep(ITERATION_INTERVAL);
     }
 
     printf("toxes are online, took %ld seconds\n", time(nullptr) - cur_time);
@@ -79,7 +79,7 @@ static void test_send_message(void)
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
-        c_sleep(200);
+        c_sleep(ITERATION_INTERVAL);
     }
 
     printf("tox clients connected took %ld seconds\n", time(nullptr) - con_time);
@@ -101,7 +101,7 @@ static void test_send_message(void)
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, &message_received);
 
-        c_sleep(200);
+        c_sleep(ITERATION_INTERVAL);
     }
 
     printf("tox clients messaging succeeded\n");

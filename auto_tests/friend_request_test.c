@@ -53,7 +53,7 @@ static void test_friend_request(void)
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
-        c_sleep(200);
+        c_sleep(ITERATION_INTERVAL);
     }
 
     printf("toxes are online, took %ld seconds\n", time(nullptr) - cur_time);
@@ -73,7 +73,7 @@ static void test_friend_request(void)
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
-        c_sleep(200);
+        c_sleep(ITERATION_INTERVAL);
     }
 
     printf("tox clients connected took %ld seconds\n", time(nullptr) - con_time);

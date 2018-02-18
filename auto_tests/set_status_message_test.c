@@ -25,11 +25,11 @@
 
 static void status_callback(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length, void *user_data)
 {
-    if (length == sizeof(STATUS_MESSAGE) &&
-            memcmp(message, STATUS_MESSAGE, sizeof(STATUS_MESSAGE)) == 0) {
-        bool *status_updated = (bool *)user_data;
-        *status_updated = true;
-    }
+    ck_assert_msg(length == sizeof(STATUS_MESSAGE) &&
+                  memcmp(message, STATUS_MESSAGE, sizeof(STATUS_MESSAGE)) == 0,
+                 "incorrect data in status callback");
+    bool *status_updated = (bool *)user_data;
+    *status_updated = true;
 }
 
 static void test_set_status_message(void)
@@ -61,7 +61,7 @@ static void test_set_status_message(void)
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
-        c_sleep(200);
+        c_sleep(ITERATION_INTERVAL);
     }
 
     printf("toxes are online, took %ld seconds\n", time(nullptr) - cur_time);
@@ -72,7 +72,7 @@ static void test_set_status_message(void)
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
-        c_sleep(200);
+        c_sleep(ITERATION_INTERVAL);
     }
 
     printf("tox clients connected took %ld seconds\n", time(nullptr) - con_time);
@@ -88,7 +88,7 @@ static void test_set_status_message(void)
     while (!status_updated) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, &status_updated);
-        c_sleep(200);
+        c_sleep(ITERATION_INTERVAL);
     }
 
     ck_assert_msg(tox_friend_get_status_message_size(tox2, 0, nullptr) == sizeof(STATUS_MESSAGE),

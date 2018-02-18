@@ -21,9 +21,11 @@
 
 #include "helpers.h"
 
+#define NICKNAME "Gentoo"
+
 static void nickchange_callback(Tox *tox, uint32_t friendnumber, const uint8_t *string, size_t length, void *userdata)
 {
-    ck_assert_msg(length == sizeof("Gentoo") && memcmp(string, "Gentoo", sizeof("Gentoo")) == 0, "Name not correct");
+    ck_assert_msg(length == sizeof(NICKNAME) && memcmp(string, NICKNAME, sizeof(NICKNAME)) == 0, "Name not correct");
     bool *nickname_updated = (bool *)userdata;
     *nickname_updated = true;
 }
@@ -56,7 +58,7 @@ static void test_set_name(void)
             tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
-        c_sleep(200);
+        c_sleep(ITERATION_INTERVAL);
     }
 
     printf("toxes are online, took %ld seconds\n", time(nullptr) - cur_time);
@@ -66,27 +68,27 @@ static void test_set_name(void)
             tox_friend_get_connection_status(tox2, 0, nullptr) != TOX_CONNECTION_UDP) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
-        c_sleep(200);
+        c_sleep(ITERATION_INTERVAL);
     }
 
     printf("tox clients connected took %ld seconds\n", time(nullptr) - con_time);
 
     tox_callback_friend_name(tox2, nickchange_callback);
     TOX_ERR_SET_INFO err_n;
-    bool ret = tox_self_set_name(tox1, (const uint8_t *)"Gentoo", sizeof("Gentoo"), &err_n);
+    bool ret = tox_self_set_name(tox1, (const uint8_t *)NICKNAME, sizeof(NICKNAME), &err_n);
     ck_assert_msg(ret && err_n == TOX_ERR_SET_INFO_OK, "tox_self_set_name failed because %u\n", err_n);
 
     bool nickname_updated = false;
     while (!nickname_updated) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, &nickname_updated);
-        c_sleep(200);
+        c_sleep(ITERATION_INTERVAL);
     }
 
-    ck_assert_msg(tox_friend_get_name_size(tox2, 0, nullptr) == sizeof("Gentoo"), "Name length not correct");
-    uint8_t temp_name[sizeof("Gentoo")];
+    ck_assert_msg(tox_friend_get_name_size(tox2, 0, nullptr) == sizeof(NICKNAME), "Name length not correct");
+    uint8_t temp_name[sizeof(NICKNAME)];
     tox_friend_get_name(tox2, 0, temp_name, nullptr);
-    ck_assert_msg(memcmp(temp_name, "Gentoo", sizeof("Gentoo")) == 0, "Name not correct");
+    ck_assert_msg(memcmp(temp_name, NICKNAME, sizeof(NICKNAME)) == 0, "Name not correct");
 
     printf("test_set_name succeeded, took %ld seconds\n", time(nullptr) - cur_time);
 
