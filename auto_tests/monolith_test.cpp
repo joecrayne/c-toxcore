@@ -16,7 +16,11 @@
 #include "config.h"
 #endif
 
-#include "../other/monolith.h"
+#include "../toxcore/monolith.h"
+
+#include "../toxav/monolith.h"
+
+#include "../toxencryptsave/monolith.h"
 #define DHT_C_INCLUDED
 
 #include "check_compat.h"
