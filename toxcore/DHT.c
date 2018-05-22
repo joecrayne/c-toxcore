@@ -61,29 +61,6 @@
 
 #define ARRAY_SIZE(ARR) (sizeof (ARR) / sizeof (ARR)[0])
 
-struct DHT_Friend {
-    uint8_t     public_key[CRYPTO_PUBLIC_KEY_SIZE];
-    Client_data client_list[MAX_FRIEND_CLIENTS];
-
-    /* Time at which the last get_nodes request was sent. */
-    uint64_t    lastgetnode;
-    /* number of times get_node packets were sent. */
-    uint32_t    bootstrap_times;
-
-    /* Symetric NAT hole punching stuff. */
-    NAT         nat;
-
-    uint16_t lock_count;
-    struct {
-        void (*ip_callback)(void *, int32_t, IP_Port);
-        void *data;
-        int32_t number;
-    } callbacks[DHT_FRIEND_MAX_LOCKS];
-
-    Node_format to_bootstrap[MAX_SENT_NODES];
-    unsigned int num_to_bootstrap;
-};
-
 struct DHT {
     Logger *log;
     Networking_Core *net;
