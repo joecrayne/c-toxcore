@@ -266,11 +266,11 @@ int main(int argc, char *argv[])
     CHECK_SIZE(Packet_Handler, 16);
     // toxcore/onion_announce
     CHECK_SIZE(Cmp_data, 296);
-    CHECK_SIZE(Onion_Announce, 128048);
+    CHECK_SIZE(Onion_Announce, 128056);
     CHECK_SIZE(Onion_Announce_Entry, 288);
     // toxcore/onion_client
     CHECK_SIZE(Last_Pinged, 40);
-    CHECK_SIZE(Onion_Client, 15816);
+    CHECK_SIZE(Onion_Client, 15824);
     CHECK_SIZE(Onion_Client_Cmp_data, 176);
     CHECK_SIZE(Onion_Client_Paths, 2520);
     CHECK_SIZE(Onion_Friend, 2040);
