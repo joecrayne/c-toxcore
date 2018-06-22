@@ -295,7 +295,7 @@ struct Messenger {
     void *conferences_object; /* Set by new_groupchats()*/
     m_conference_invite_cb *conference_invite;
 
-    void (*group_invite)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
+    void (*group_invite)(struct Messenger *m, uint32_t, const uint8_t *, size_t, const uint8_t *, size_t, void *);
     void *group_invite_userdata;
 
     m_file_recv_cb *file_sendrequest;
@@ -601,7 +601,8 @@ void m_callback_conference_invite(Messenger *m, void (*function)(Messenger *m, u
  *
  *  Function(Messenger *m, uint32_t friendnumber, const uint8_t *data, size_t length, void *userdata)
  */
-void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
+void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t,
+                                                            const uint8_t *, size_t, void *),
                              void *userdata);
 
 /* Send a conference invite packet.
