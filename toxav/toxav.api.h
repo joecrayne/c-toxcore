@@ -1,43 +1,12 @@
-%{
-/*
- * Copyright © 2016-2017 The TokTok team.
- * Copyright © 2013-2015 Tox project.
- *
- * This file is part of Tox, the free peer to peer instant messenger.
- *
- * Tox is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Tox is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef TOXAV_H
-#define TOXAV_H
-
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-%}
-
-/** \page av Public audio/video API for Tox clients.
+/**
+ * \page av Public audio/video API for Tox clients.
  *
  * This API can handle multiple calls. Each call has its state, in very rare
  * occasions the library can change the state of the call without apps knowledge.
- *
  */
 
-/** \subsection events Events and callbacks
+/**
+ * \subsection events Events and callbacks
  *
  * As in Core API, events are handled by callbacks. One callback can be
  * registered per event. All events have a callback function type named
@@ -48,10 +17,10 @@ extern "C" {
  * itself. Unlike Core API, lack of some event handlers will cause the the
  * library to drop calls before they are started. Hanging up call from a
  * callback causes undefined behaviour.
- *
  */
 
-/** \subsection threading Threading implications
+/**
+ * \subsection threading Threading implications
  *
  * Unlike the Core API, this API is fully thread-safe. The library will ensure
  * the proper synchronization of parallel calls.
@@ -69,17 +38,7 @@ extern "C" {
  * error code.
  */
 
-/**
- * External Tox type.
- */
-class tox {
-  struct this;
-}
-
-/**
- * ToxAV.
- */
-class toxAV {
+private import "../toxcore/tox.api.h"
 
 /**
  * The ToxAV instance type. Each ToxAV instance can be bound to only one Tox
@@ -87,9 +46,8 @@ class toxAV {
  * sure to close ToxAV instance prior closing Tox instance otherwise undefined
  * behaviour occurs. Upon closing of ToxAV instance, all active calls will be
  * forcibly terminated without notifying peers.
- *
  */
-struct this;
+class ToxAV {
 
 /*******************************************************************************
  *
@@ -101,7 +59,7 @@ struct this;
 /**
  * Start new A/V session. There can only be only one session per Tox instance.
  */
-static this new(tox::this *tox) {
+static this new(Tox tox) {
   NULL,
   /**
    * Memory allocation failure while trying to allocate structures required for
@@ -126,7 +84,7 @@ void kill();
 /**
  * Returns the Tox instance the A/V object was created for.
  */
-tox::this *tox { get(); }
+Tox tox { get(); }
 
 
 /*******************************************************************************
@@ -140,7 +98,7 @@ tox::this *tox { get(); }
  * Returns the interval in milliseconds when the next toxav_iterate call should
  * be. If no call is active at the moment, this function returns 200.
  */
-const uint32_t iteration_interval();
+uint32_t iteration_interval() const;
 
 /**
  * Main loop for the session. This function needs to be called in intervals of
@@ -164,14 +122,15 @@ void iterate();
  * if such behaviour is desired. If the client does not stop ringing, the
  * library will not stop until the friend is disconnected. Audio and video
  * receiving are both enabled by default.
- *
- * @param friend_number The friend number of the friend that should be called.
- * @param audio_bit_rate Audio bit rate in Kb/sec. Set this to 0 to disable
- * audio sending.
- * @param video_bit_rate Video bit rate in Kb/sec. Set this to 0 to disable
- * video sending.
  */
-bool call(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_rate) {
+bool call(
+  //! The friend number of the friend that should be called.
+  uint32_t friend_number,
+  //! Audio bit rate in Kb/sec. Set this to 0 to disable audio sending.
+  uint32_t audio_bit_rate,
+  //! Video bit rate in Kb/sec. Set this to 0 to disable video sending.
+  uint32_t video_bit_rate,
+) {
   /**
    * A resource allocation error occurred while trying to create the structures
    * required for the call.
@@ -203,12 +162,15 @@ bool call(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_ra
 event call {
   /**
    * The function type for the ${event call} callback.
-   *
-   * @param friend_number The friend number from which the call is incoming.
-   * @param audio_enabled True if friend is sending audio.
-   * @param video_enabled True if friend is sending video.
    */
-  typedef void(uint32_t friend_number, bool audio_enabled, bool video_enabled);
+  typedef void(
+    //! The friend number from which the call is incoming.
+    uint32_t friend_number,
+    //! True if friend is sending audio.
+    bool audio_enabled,
+    //! True if friend is sending video.
+    bool video_enabled,
+  );
 }
 
 /**
@@ -217,14 +179,15 @@ event call {
  * If answering fails for any reason, the call will still be pending and it is
  * possible to try and answer it later. Audio and video receiving are both
  * enabled by default.
- *
- * @param friend_number The friend number of the friend that is calling.
- * @param audio_bit_rate Audio bit rate in Kb/sec. Set this to 0 to disable
- * audio sending.
- * @param video_bit_rate Video bit rate in Kb/sec. Set this to 0 to disable
- * video sending.
  */
-bool answer(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_rate) {
+bool answer(
+  //! The friend number of the friend that is calling.
+  uint32_t friend_number,
+  //! Audio bit rate in Kb/sec. Set this to 0 to disable audio sending.
+  uint32_t audio_bit_rate,
+  //! Video bit rate in Kb/sec. Set this to 0 to disable video sending.
+  uint32_t video_bit_rate,
+) {
   /**
    * Synchronization error occurred.
    */
@@ -258,49 +221,53 @@ bool answer(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_
  ******************************************************************************/
 
 
-bitmask FRIEND_CALL_STATE {
+bitmask Friend_Call_State {
   /**
    * Set by the AV core if an error occurred on the remote end or if friend
    * timed out. This is the final state after which no more state
    * transitions can occur for the call. This call state will never be triggered
    * in combination with other call states.
    */
-  ERROR,
+  ERROR = 1,
   /**
    * The call has finished. This is the final state after which no more state
    * transitions can occur for the call. This call state will never be
    * triggered in combination with other call states.
    */
-  FINISHED,
+  FINISHED = 2,
   /**
    * The flag that marks that friend is sending audio.
    */
-  SENDING_A,
+  SENDING_A = 4,
   /**
    * The flag that marks that friend is sending video.
    */
-  SENDING_V,
+  SENDING_V = 8,
   /**
    * The flag that marks that friend is receiving audio.
    */
-  ACCEPTING_A,
+  ACCEPTING_A = 16,
   /**
    * The flag that marks that friend is receiving video.
    */
-  ACCEPTING_V,
+  ACCEPTING_V = 32,
 }
 
 event call_state {
  /**
   * The function type for the ${event call_state} callback.
-  *
-  * @param friend_number The friend number for which the call state changed.
-  * @param state The bitmask of the new call state which is guaranteed to be
-  * different than the previous state. The state is set to 0 when the call is
-  * paused. The bitmask represents all the activities currently performed by the
-  * friend.
   */
-  typedef void(uint32_t friend_number, uint32_t state);
+  typedef void(
+    //! The friend number for which the call state changed.
+    uint32_t friend_number,
+    /**
+     * The bitmask of the new call state which is guaranteed to be
+     * different than the previous state. The state is set to 0 when the call is
+     * paused. The bitmask represents all the activities currently performed by the
+     * friend.
+     */
+    uint32_t state,
+  );
 }
 
 
@@ -311,53 +278,54 @@ event call_state {
  ******************************************************************************/
 
 
-enum class CALL_CONTROL {
-    /**
-     * Resume a previously paused call. Only valid if the pause was caused by this
-     * client, if not, this control is ignored. Not valid before the call is accepted.
-     */
-    RESUME,
-    /**
-     * Put a call on hold. Not valid before the call is accepted.
-     */
-    PAUSE,
-    /**
-     * Reject a call if it was not answered, yet. Cancel a call after it was
-     * answered.
-     */
-    CANCEL,
-    /**
-     * Request that the friend stops sending audio. Regardless of the friend's
-     * compliance, this will cause the ${event audio.receive_frame} event to stop being
-     * triggered on receiving an audio frame from the friend.
-     */
-    MUTE_AUDIO,
-    /**
-     * Calling this control will notify client to start sending audio again.
-     */
-    UNMUTE_AUDIO,
-    /**
-     * Request that the friend stops sending video. Regardless of the friend's
-     * compliance, this will cause the ${event video.receive_frame} event to stop being
-     * triggered on receiving a video frame from the friend.
-     */
-    HIDE_VIDEO,
-    /**
-     * Calling this control will notify client to start sending video again.
-     */
-    SHOW_VIDEO,
+enum class Call_Control {
+  /**
+   * Resume a previously paused call. Only valid if the pause was caused by this
+   * client, if not, this control is ignored. Not valid before the call is accepted.
+   */
+  RESUME,
+  /**
+   * Put a call on hold. Not valid before the call is accepted.
+   */
+  PAUSE,
+  /**
+   * Reject a call if it was not answered, yet. Cancel a call after it was
+   * answered.
+   */
+  CANCEL,
+  /**
+   * Request that the friend stops sending audio. Regardless of the friend's
+   * compliance, this will cause the ${event audio.receive_frame} event to stop being
+   * triggered on receiving an audio frame from the friend.
+   */
+  MUTE_AUDIO,
+  /**
+   * Calling this control will notify client to start sending audio again.
+   */
+  UNMUTE_AUDIO,
+  /**
+   * Request that the friend stops sending video. Regardless of the friend's
+   * compliance, this will cause the ${event video.receive_frame} event to stop being
+   * triggered on receiving a video frame from the friend.
+   */
+  HIDE_VIDEO,
+  /**
+   * Calling this control will notify client to start sending video again.
+   */
+  SHOW_VIDEO,
 }
 
 /**
  * Sends a call control command to a friend.
  *
- * @param friend_number The friend number of the friend this client is in a call
- * with.
- * @param control The control command to send.
- *
  * @return true on success.
  */
-bool call_control(uint32_t friend_number, CALL_CONTROL control) {
+bool call_control(
+  //! The friend number of the friend this client is in a call with.
+  uint32_t friend_number,
+  //! The control command to send.
+  Call_Control control,
+) {
   /**
    * Synchronization error occurred.
    */
@@ -455,32 +423,40 @@ namespace audio {
    * For mono audio, this has no meaning, every sample is subsequent. For stereo,
    * this means the expected format is LRLRLR... with samples for left and right
    * alternating.
-   *
-   * @param friend_number The friend number of the friend to which to send an
-   * audio frame.
-   * @param pcm An array of audio samples. The size of this array must be
-   * sample_count * channels.
-   * @param sample_count Number of samples in this frame. Valid numbers here are
-   * ((sample rate) * (audio length) / 1000), where audio length can be
-   * 2.5, 5, 10, 20, 40 or 60 millseconds.
-   * @param channels Number of audio channels. Supported values are 1 and 2.
-   * @param sampling_rate Audio sampling rate used in this frame. Valid sampling
-   * rates are 8000, 12000, 16000, 24000, or 48000.
    */
-  bool send_frame(uint32_t friend_number, const int16_t *pcm, size_t sample_count,
-                  uint8_t channels, uint32_t sampling_rate) with error for send_frame;
+  bool send_frame(
+    //! The friend number of the friend to which to send an audio frame.
+    uint32_t friend_number,
+    //! An array of audio samples.
+    const int16_t[sample_count * channels] pcm,
+    /**
+     * Number of samples in this frame. Valid numbers here are
+     * ((sample rate) * (audio length) / 1000), where audio length can be
+     * 2.5, 5, 10, 20, 40 or 60 millseconds.
+     */
+    size_t sample_count,
+    //! Number of audio channels. Supported values are 1 and 2.
+    uint8_t channels,
+    /**
+     * Audio sampling rate used in this frame.
+     *
+     * Valid sampling rates are 8000, 12000, 16000, 24000, or 48000.
+     */
+    uint32_t sampling_rate,
+  ) with error for send_frame;
 
   uint32_t bit_rate {
     /**
-     * Set the bit rate to be used in subsequent video frames.
+     * Set the bit rate to be used in subsequent audio frames.
      *
-     * @param friend_number The friend number of the friend for which to set the
-     * bit rate.
-     * @param bit_rate The new audio bit rate in Kb/sec. Set to 0 to disable.
+     * The audio bit rate is measured in Kb/sec. Set to 0 to disable.
      *
      * @return true on success.
      */
-    set(uint32_t friend_number) with error for bit_rate_set;
+    set(
+      //! The friend number of the friend for which to set the bit rate.
+      uint32_t friend_number,
+    ) with error for bit_rate_set;
   }
 
   event bit_rate {
@@ -488,12 +464,13 @@ namespace audio {
      * The function type for the ${event bit_rate} callback. The event is triggered
      * when the network becomes too saturated for current bit rates at which
      * point core suggests new bit rates.
-     *
-     * @param friend_number The friend number of the friend for which to set the
-     * bit rate.
-     * @param audio_bit_rate Suggested maximum audio bit rate in Kb/sec.
      */
-    typedef void(uint32_t friend_number, uint32_t audio_bit_rate);
+    typedef void(
+      //! The friend number of the friend for which to set the bit rate.
+      uint32_t friend_number,
+      //! Suggested maximum audio bit rate in Kb/sec.
+      uint32_t audio_bit_rate,
+    );
   }
 }
 
@@ -504,17 +481,21 @@ namespace video {
    * Y - plane should be of size: height * width
    * U - plane should be of size: (height/2) * (width/2)
    * V - plane should be of size: (height/2) * (width/2)
-   *
-   * @param friend_number The friend number of the friend to which to send a video
-   * frame.
-   * @param width Width of the frame in pixels.
-   * @param height Height of the frame in pixels.
-   * @param y Y (Luminance) plane data.
-   * @param u U (Chroma) plane data.
-   * @param v V (Chroma) plane data.
    */
-  bool send_frame(uint32_t friend_number, uint16_t width, uint16_t height,
-                  const uint8_t *y, const uint8_t *u, const uint8_t *v) with error for send_frame;
+  bool send_frame(
+    //! The friend number of the friend to which to send a video frame.
+    uint32_t friend_number,
+    //! Width of the frame in pixels.
+    uint16_t width,
+    //! Height of the frame in pixels.
+    uint16_t height,
+    //! Y (Luminance) plane data.
+    const uint8_t[width * height] y,
+    //! U (Chroma) plane data.
+    const uint8_t[(width / 2) * (height / 2)] u,
+    //! V (Chroma) plane data.
+    const uint8_t[(width / 2) * (height / 2)] v,
+  ) with error for send_frame;
 
   uint32_t bit_rate {
     /**
@@ -565,8 +546,13 @@ namespace audio {
      * @param sampling_rate Sampling rate used in this frame.
      *
      */
-    typedef void(uint32_t friend_number, const int16_t *pcm, size_t sample_count,
-                 uint8_t channels, uint32_t sampling_rate);
+    typedef void(
+      uint32_t friend_number,
+      const int16_t[sample_count * channels] pcm,
+      size_t sample_count,
+      uint8_t channels,
+      uint32_t sampling_rate,
+    );
   }
 }
 
@@ -594,15 +580,24 @@ namespace video {
      * @param ustride U chroma plane stride.
      * @param vstride V chroma plane stride.
      */
-    typedef void(uint32_t friend_number, uint16_t width, uint16_t height,
-                 const uint8_t *y, const uint8_t *u, const uint8_t *v,
-                 int32_t ystride, int32_t ustride, int32_t vstride);
+    typedef void(
+      uint32_t friend_number,
+      uint16_t width,
+      uint16_t height,
+      const uint8_t[max(width, abs(ystride)) * height] y,
+      const uint8_t[max(width / 2, abs(ystride)) * (height / 2)] u,
+      const uint8_t[max(width / 2, abs(ystride)) * (height / 2)] v,
+      int32_t ystride,
+      int32_t ustride,
+      int32_t vstride,
+    );
   }
 }
 
 }
 
 %{
+
 /**
  * NOTE Compatibility with old toxav group calls. TODO(iphydf): remove
  */
@@ -648,8 +643,4 @@ int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data
 int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                            uint32_t sample_rate);
 
-#ifdef __cplusplus
-}
-#endif
-#endif /* TOXAV_H */
 %}

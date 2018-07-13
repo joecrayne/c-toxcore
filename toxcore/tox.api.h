@@ -1,39 +1,6 @@
-%{
 /*
  * The Tox public API.
  */
-
-/*
- * Copyright © 2016-2017 The TokTok team.
- * Copyright © 2013 Tox project.
- *
- * This file is part of Tox, the free peer to peer instant messenger.
- *
- * Tox is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Tox is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef TOX_H
-#define TOX_H
-
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-%}
-
 
 /*****************************************************************************
  * `tox.h` SHOULD *NOT* BE EDITED MANUALLY – any changes should be made to   *
@@ -42,7 +9,8 @@ extern "C" {
  *****************************************************************************/
 
 
-/** \page core Public core API for Tox clients.
+/**
+ * @page core Public core API for Tox clients.
  *
  * Every function that can fail takes a function-specific error code pointer
  * that can be used to diagnose problems with the Tox state or the function
@@ -81,7 +49,8 @@ extern "C" {
  * part of the ABI.
  */
 
-/** \subsection events Events and callbacks
+/**
+ * @subsection events Events and callbacks
  *
  * Events are handled by callbacks. One callback can be registered per event.
  * All events have a callback function type named `tox_{event}_cb` and a
@@ -91,12 +60,12 @@ extern "C" {
  * event listeners, it needs to implement the dispatch functionality itself.
  *
  * The last argument to a callback is the user data pointer. It is passed from
- * ${tox.iterate} to each callback in sequence.
+ * ${Tox.iterate} to each callback in sequence.
  *
  * The user data pointer is never stored or dereferenced by any library code, so
  * can be any pointer, including NULL. Callbacks must all operate on the same
  * object type. In the apidsl code (tox.in.h), this is denoted with `any`. The
- * `any` in ${tox.iterate} must be the same `any` as in all callbacks. In C,
+ * `any` in ${Tox.iterate} must be the same `any` as in all callbacks. In C,
  * lacking parametric polymorphism, this is a pointer to void.
  *
  * Old style callbacks that are registered together with a user data pointer
@@ -104,12 +73,13 @@ extern "C" {
  * their own user data pointer of their own type.
  */
 
-/** \subsection threading Threading implications
+/**
+ * @subsection threading Threading implications
  *
  * It is possible to run multiple concurrent threads with a Tox instance for
  * each thread. It is also possible to run all Tox instances in the same thread.
  * A common way to run Tox (multiple or single instance) is to have one thread
- * running a simple ${tox.iterate} loop, sleeping for ${tox.iteration_interval}
+ * running a simple ${Tox.iterate} loop, sleeping for ${Tox.iteration_interval}
  * milliseconds on each iteration.
  *
  * If you want to access a single Tox instance from multiple threads, access
@@ -126,20 +96,17 @@ extern "C" {
  *
  * E.g. to get the current nickname, one would write
  *
- * \code
- * size_t length = ${tox.self.name.size}(tox);
+ * @code
+ * uint32_t length = ${Tox.self.name.size}(tox);
  * uint8_t *name = malloc(length);
  * if (!name) abort();
- * ${tox.self.name.get}(tox, name);
- * \endcode
+ * ${Tox.self.name.get}(tox, name);
+ * @endcode
  *
- * If any other thread calls ${tox.self.name.set} while this thread is allocating
+ * If any other thread calls ${Tox.self.name.set} while this thread is allocating
  * memory, the length may have become invalid, and the call to
- * ${tox.self.name.get} may cause undefined behaviour.
+ * ${Tox.self.name.get} may cause undefined behaviour.
  */
-
-// The rest of this file is in class tox.
-class tox {
 
 /**
  * The Tox instance type. All the state associated with a connection is held
@@ -148,7 +115,7 @@ class tox {
  * device is limited. Note that this is not just a per-process limit, since the
  * limiting factor is the number of usable ports on a device.
  */
-struct this;
+class Tox {
 
 
 /*******************************************************************************
@@ -233,89 +200,75 @@ static namespace version {
 /**
  * The size of a Tox Public Key in bytes.
  */
-const PUBLIC_KEY_SIZE              = 32;
+const PUBLIC_KEY_SIZE                      = 32;
 
 /**
  * The size of a Tox Secret Key in bytes.
  */
-const SECRET_KEY_SIZE              = 32;
+const SECRET_KEY_SIZE                      = 32;
 
 /**
  * The size of the nospam in bytes when written in a Tox address.
  */
-const NOSPAM_SIZE                  = sizeof(uint32_t);
+const NOSPAM_SIZE                          = sizeof(uint32_t);
 
 /**
  * The size of a Tox address in bytes. Tox addresses are in the format
- * [Public Key ($PUBLIC_KEY_SIZE bytes)][nospam (4 bytes)][checksum (2 bytes)].
+ * [Public Key (${PUBLIC_KEY_SIZE} bytes)][nospam (4 bytes)][checksum (2 bytes)].
  *
  * The checksum is computed over the Public Key and the nospam value. The first
  * byte is an XOR of all the even bytes (0, 2, 4, ...), the second byte is an
  * XOR of all the odd bytes (1, 3, 5, ...) of the Public Key and nospam.
  */
-const ADDRESS_SIZE                = PUBLIC_KEY_SIZE + NOSPAM_SIZE + sizeof(uint16_t);
+const ADDRESS_SIZE                        = PUBLIC_KEY_SIZE + NOSPAM_SIZE + sizeof(uint16_t);
 
 /**
  * Maximum length of a nickname in bytes.
- *
- * @deprecated The macro will be removed in 0.3.0. Use the function instead.
  */
-const MAX_NAME_LENGTH             = 128;
+private const MAX_NAME_LENGTH             = 128;
 
 /**
  * Maximum length of a status message in bytes.
- *
- * @deprecated The macro will be removed in 0.3.0. Use the function instead.
  */
-const MAX_STATUS_MESSAGE_LENGTH   = 1007;
+private const MAX_STATUS_MESSAGE_LENGTH   = 1007;
 
 /**
  * Maximum length of a friend request message in bytes.
- *
- * @deprecated The macro will be removed in 0.3.0. Use the function instead.
  */
-const MAX_FRIEND_REQUEST_LENGTH   = 1016;
+private const MAX_FRIEND_REQUEST_LENGTH   = 1016;
 
 /**
  * Maximum length of a single message after which it should be split.
- *
- * @deprecated The macro will be removed in 0.3.0. Use the function instead.
  */
-const MAX_MESSAGE_LENGTH          = 1372;
+private const MAX_MESSAGE_LENGTH          = 1372;
 
 /**
  * Maximum size of custom packets. TODO(iphydf): should be LENGTH?
- *
- * @deprecated The macro will be removed in 0.3.0. Use the function instead.
  */
-const MAX_CUSTOM_PACKET_SIZE      = 1373;
+private const MAX_CUSTOM_PACKET_SIZE      = 1373;
 
 /**
  * The number of bytes in a hash generated by $hash.
  */
-const HASH_LENGTH                 = 32;
+const HASH_LENGTH                         = 32;
 
 /**
  * The number of bytes in a file id.
  */
-const FILE_ID_LENGTH              = 32;
+const FILE_ID_LENGTH                      = 32;
 
 /**
  * Maximum file name length for file transfers.
- *
- * @deprecated The macro will be removed in 0.3.0. Use the function instead.
  */
-const MAX_FILENAME_LENGTH         = 255;
+private const MAX_FILENAME_LENGTH         = 255;
 
 /**
  * Maximum length of a hostname, e.g. proxy or bootstrap node names.
  *
  * This length includes the NUL byte. Hostnames are NUL-terminated C strings, so
  * they are 255 characters plus one NUL byte.
- *
- * @deprecated The macro will be removed in 0.3.0. Use the function instead.
  */
-const MAX_HOSTNAME_LENGTH         = 256;
+private const MAX_HOSTNAME_LENGTH         = 256;
 
 
 /*******************************************************************************
@@ -328,7 +281,7 @@ const MAX_HOSTNAME_LENGTH         = 256;
 /**
  * Represents the possible statuses a client can have.
  */
-enum class USER_STATUS {
+enum class User_Status {
   /**
    * User is online and available.
    */
@@ -347,10 +300,10 @@ enum class USER_STATUS {
 
 
 /**
- * Represents message types for ${tox.friend.send.message} and conference
+ * Represents message types for ${friend.send.message} and conference
  * messages.
  */
-enum class MESSAGE_TYPE {
+enum class Message_Type {
   /**
    * Normal text message. Similar to PRIVMSG on IRC.
    */
@@ -373,7 +326,7 @@ enum class MESSAGE_TYPE {
 /**
  * Type of proxy used to connect to TCP relays.
  */
-enum class PROXY_TYPE {
+enum class Proxy_Type {
   /**
    * Don't use a proxy.
    */
@@ -391,7 +344,7 @@ enum class PROXY_TYPE {
 /**
  * Type of savedata to create the Tox instance from.
  */
-enum class SAVEDATA_TYPE {
+enum class Savedata_Type {
   /**
    * No savedata.
    */
@@ -410,7 +363,7 @@ enum class SAVEDATA_TYPE {
 /**
  * Severity level of log messages.
  */
-enum class LOG_LEVEL {
+enum class Log_Level {
   /**
    * Very detailed traces including all network activity.
    */
@@ -442,32 +395,29 @@ enum class LOG_LEVEL {
  * Other toxcore modules such as toxav may concurrently call this callback at
  * any time. Thus, user code must make sure it is equipped to handle concurrent
  * execution, e.g. by employing appropriate mutex locking.
- *
- * @param level The severity of the log message.
- * @param file The source file from which the message originated.
- * @param line The source line from which the message originated.
- * @param func The function from which the message originated.
- * @param message The log message.
- * @param user_data The user data pointer passed to $new in options.
  */
-typedef void log_cb(LOG_LEVEL level, string file, uint32_t line, string func, string message, any user_data);
+typedef void log_cb(
+  //! The severity of the log message.
+  Log_Level level,
+  //! The source file from which the message originated.
+  string file,
+  //! The source line from which the message originated.
+  uint32_t line,
+  //! The function from which the message originated.
+  string func,
+  //! The log message.
+  string message,
+  //! The user data pointer passed to $new in options.
+  void *user_data,
+);
 
 
-static class options {
+static class Options {
   /**
    * This struct contains all the startup options for Tox. You must $new to
    * allocate an object of this type.
-   *
-   * WARNING: Although this struct happens to be visible in the API, it is
-   * effectively private. Do not allocate this yourself or access members
-   * directly, as it *will* break binary compatibility frequently.
-   *
-   * @deprecated The memory layout of this struct (size, alignment, and field
-   * order) is not part of the ABI. To remain compatible, prefer to use $new to
-   * allocate the object and accessor functions to set the members. The struct
-   * will become opaque (i.e. the definition will become private) in v0.3.0.
    */
-  struct this [get, set] {
+  struct this {
     /**
      * The type of socket to create.
      *
@@ -579,7 +529,7 @@ static class options {
       /**
        * The length of the savedata.
        */
-      size_t length;
+      uint32_t length;
     }
 
     namespace log {
@@ -591,7 +541,7 @@ static class options {
       /**
        * User data pointer passed to the logging callback.
        */
-      any user_data;
+      void *user_data;
     }
   }
 
@@ -604,8 +554,6 @@ static class options {
    * to pass an uninitialised object).
    *
    * If options is NULL, this function has no effect.
-   *
-   * @param options An options object to be filled with default options.
    */
   void default();
 
@@ -654,14 +602,19 @@ static class options {
  * If loading failed or succeeded only partially, the new or partially loaded
  * instance is returned and an error code is set.
  *
- * @param options An options object as described above. If this parameter is
- *   NULL, the default options are used.
  *
  * @see $iterate for the event loop.
  *
  * @return A new Tox instance pointer on success or NULL on failure.
  */
-static this new(const options_t *options) {
+static this new(
+  /**
+   * An options object as described above.
+   *
+   * If this parameter is NULL, the default options are used.
+   */
+  const Options options
+) {
   NULL,
   /**
    * The function was unable to allocate enough memory to store the internal
@@ -675,7 +628,7 @@ static this new(const options_t *options) {
    */
   PORT_ALLOC,
 
-  namespace PROXY {
+  namespace proxy {
     /**
      * proxy_type was invalid.
      */
@@ -695,7 +648,7 @@ static this new(const options_t *options) {
     NOT_FOUND,
   }
 
-  namespace LOAD {
+  namespace load {
     /**
      * The byte array to be loaded contained an encrypted save.
      */
@@ -761,7 +714,7 @@ uint8_t[size] savedata {
  * @param port The port on the host on which the bootstrap Tox instance is
  *   listening.
  * @param public_key The long term public key of the bootstrap node
- *   ($PUBLIC_KEY_SIZE bytes).
+ *   (${PUBLIC_KEY_SIZE} bytes).
  * @return true on success.
  */
 bool bootstrap(string host, uint16_t port, const uint8_t[PUBLIC_KEY_SIZE] public_key) {
@@ -786,10 +739,10 @@ bool bootstrap(string host, uint16_t port, const uint8_t[PUBLIC_KEY_SIZE] public
  * bootstrap nodes.
  *
  * @param host The hostname or IP address (IPv4 or IPv6) of the TCP relay.
- *   Must be at most $MAX_HOSTNAME_LENGTH chars, including the NUL byte.
+ *   Must be at most ${MAX_HOSTNAME_LENGTH} chars, including the NUL byte.
  * @param port The port on the host on which the TCP relay is listening.
  * @param public_key The long term public key of the TCP relay
- *   ($PUBLIC_KEY_SIZE bytes).
+ *   (${PUBLIC_KEY_SIZE} bytes).
  * @return true on success.
  */
 bool add_tcp_relay(string host, uint16_t port, const uint8_t[PUBLIC_KEY_SIZE] public_key)
@@ -865,7 +818,7 @@ const uint32_t iteration_interval();
  * The main loop that needs to be run in intervals of $iteration_interval()
  * milliseconds.
  */
-void iterate(any user_data);
+void iterate(void *user_data);
 
 
 /*******************************************************************************
@@ -913,7 +866,7 @@ inline namespace self {
     /**
      * Copy the Tox Public Key (long term) from the Tox object.
      *
-     * @param public_key A memory region of at least $PUBLIC_KEY_SIZE bytes. If
+     * @param public_key A memory region of at least ${PUBLIC_KEY_SIZE} bytes. If
      *   this parameter is NULL, this function has no effect.
      */
     get();
@@ -1131,7 +1084,7 @@ namespace friend {
    * controlled by the same entity, so that this entity can perform the mutual
    * friend adding. In this case, there is no need for a friend request, either.
    *
-   * @param public_key A byte array of length $PUBLIC_KEY_SIZE containing the
+   * @param public_key A byte array of length ${PUBLIC_KEY_SIZE} containing the
    *   Public Key (not the Address) of the friend to add.
    *
    * @return the friend number on success, UINT32_MAX on failure.
@@ -1227,7 +1180,7 @@ namespace friend {
      * Copies the Public Key associated with a given friend number to a byte array.
      *
      * @param friend_number The friend number you want the Public Key of.
-     * @param public_key A memory region of at least $PUBLIC_KEY_SIZE bytes. If
+     * @param public_key A memory region of at least ${PUBLIC_KEY_SIZE} bytes. If
      *   this parameter is NULL, this function has no effect.
      *
      * @return true on success.
@@ -2009,7 +1962,7 @@ namespace file {
      * @param position The file or stream position from which to continue reading.
      * @param length The number of bytes requested for the current chunk.
      */
-    typedef void(uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length);
+    typedef void(uint32_t friend_number, uint32_t file_number, uint64_t position, uint32_t length);
   }
 
 }
@@ -2256,7 +2209,7 @@ namespace conference {
 
     /**
      * Copy the public key of peer_number who is in conference_number to public_key.
-     * public_key must be $PUBLIC_KEY_SIZE long.
+     * public_key must be ${PUBLIC_KEY_SIZE} long.
      *
      * @return true on success.
      */
@@ -2584,7 +2537,7 @@ inline namespace self {
      * Be aware that every time a new instance is created, the DHT public key
      * changes, meaning this cannot be used to run a permanent bootstrap node.
      *
-     * @param dht_id A memory region of at least $PUBLIC_KEY_SIZE bytes. If this
+     * @param dht_id A memory region of at least ${PUBLIC_KEY_SIZE} bytes. If this
      *   parameter is NULL, this function has no effect.
      */
     get();
