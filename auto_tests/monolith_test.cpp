@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
     CHECK_SIZE(TCP_Proxy_Info, 40);
     // toxcore/TCP_connection
     CHECK_SIZE(TCP_con, 112);
-    CHECK_SIZE(TCP_Connections, 200);
+    CHECK_SIZE(TCP_Connections, 216);
     CHECK_SIZE(TCP_Connection_to, 112);
     // toxcore/TCP_server
     CHECK_SIZE(TCP_Priority_List, 16);
