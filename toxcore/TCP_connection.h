@@ -143,7 +143,9 @@ void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_
         const uint8_t *data, uint16_t length, void *userdata), void *object);
 
 void set_connection_status_updated_callback(TCP_Connections *tcp_c,
-                                            void (*connection_status_updated_callback)(void *object),
+                                            void (*connection_status_updated_callback)(void *object,
+                                                                                       TCP_Connections *tcp_c,
+                                                                                       int status),
                                             void *object);
 
 /* Set the callback for TCP oob data packets.
