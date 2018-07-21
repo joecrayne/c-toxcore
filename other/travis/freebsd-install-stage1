@@ -77,7 +77,7 @@ if [ ! -f ./$IMAGE_NAME.tgz ] || [ ! -f ./freebsd-install-stage1.sha256 ] || [ "
   execute_shell_and_wait 'echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config'
   execute_shell_and_wait 'echo "PermitEmptyPasswords yes"   >> /etc/ssh/sshd_config'
   execute_shell_and_wait 'echo "sshd_enable=YES"            >> /etc/rc.conf'
-  send_keys 'sh /etc/rc.d/netif restart && sh /etc/rc.d/sshd start && passwd
+  send_keys 'sh /etc/rc.d/netif restart && sh /etc/rc.d/sshd start && password
 '
 
   # Wait for the password prompt
