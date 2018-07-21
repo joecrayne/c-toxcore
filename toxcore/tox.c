@@ -2143,6 +2143,12 @@ void tox_callback_group_private_message(Tox *tox, tox_group_private_message_cb *
     tox->group_private_message_callback = function;
 }
 
+void tox_callback_group_custom_packet(Tox *tox, tox_group_custom_packet_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    gc_callback_custom_packet(m, function, user_data);
+}
+
 void tox_callback_group_moderation(Tox *tox, tox_group_moderation_cb *function, void *userdata)
 {
     assert(userdata == nullptr);
