@@ -78,7 +78,7 @@ install -m 0644 other/bootstrap_daemon/tox-bootstrapd.conf %{buildroot}%{_syscon
 
 %pre -n tox-bootstrapd
 getent group tox-bootstrapd >/dev/null || groupadd -r tox-bootstrapd
-getent password tox-bootstrapd >/dev/null || \
+getent passwd tox-bootstrapd >/dev/null || \
     useradd -r -g tox-bootstrapd -d /var/lib/tox-bootstrapd -s /sbin/nologin \
     -c "Account to run Tox's DHT bootstrap daemon" tox-bootstrapd
 
