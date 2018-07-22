@@ -418,13 +418,13 @@ static void tox_group_message_handler(Messenger *m, uint32_t groupnumber, uint32
 }
 
 static void tox_group_private_message_handler(Messenger *m, uint32_t groupnumber, uint32_t peer_id,
-        const uint8_t *message, size_t length, void *user_data)
+        unsigned int type, const uint8_t *message, size_t length, void *user_data)
 {
     puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_private_message_callback != nullptr) {
-        tox->group_private_message_callback(tox, groupnumber, peer_id, message, length, tox->non_const_user_data);
+        tox->group_private_message_callback(tox, groupnumber, peer_id, (TOX_MESSAGE_TYPE)type, message, length, tox->non_const_user_data);
     }
 }
 
@@ -440,13 +440,13 @@ static void tox_group_custom_packet_handler(Messenger *m, uint32_t groupnumber, 
 }
 
 static void tox_group_invite_handler(Messenger *m, uint32_t friend_number, const uint8_t *invite_data, size_t length,
-                                     void *user_data)
+                                     const uint8_t *group_name, size_t group_name_length, void *user_data)
 {
     puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_invite_callback != nullptr) {
-        tox->group_invite_callback(tox, friend_number, invite_data, length, tox->non_const_user_data);
+        tox->group_invite_callback(tox, friend_number, invite_data, length, group_name, group_name_length, tox->non_const_user_data);
     }
 }
 
@@ -705,6 +705,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     gc_callback_peer_exit(m, tox_group_peer_exit_handler, tox);
     gc_callback_self_join(m, tox_group_self_join_handler, tox);
     gc_callback_rejected(m, tox_group_join_fail_handler, tox);
+    gc_callback_custom_packet(m, tox_group_custom_packet_handler, tox);
 #endif
 
     tox_options_free(default_options);
@@ -2145,8 +2146,8 @@ void tox_callback_group_private_message(Tox *tox, tox_group_private_message_cb *
 
 void tox_callback_group_custom_packet(Tox *tox, tox_group_custom_packet_cb *function, void *user_data)
 {
-    Messenger *m = tox;
-    gc_callback_custom_packet(m, function, user_data);
+    assert(user_data == nullptr);
+    tox->group_custom_packet_callback = function;
 }
 
 void tox_callback_group_moderation(Tox *tox, tox_group_moderation_cb *function, void *userdata)
@@ -2369,7 +2370,6 @@ bool tox_group_reconnect(Tox *tox, uint32_t group_number, TOX_ERR_GROUP_RECONNEC
 {
     Messenger *m = tox->m;
     GC_Chat *chat = gc_get_group(m->group_handler, group_number);
->>>>>>> reconnection and disconnection. renaming in api
 
     if (chat == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_RECONNECT_GROUP_NOT_FOUND);
@@ -2910,8 +2910,8 @@ bool tox_group_send_message(Tox *tox, uint32_t group_number, TOX_MESSAGE_TYPE ty
     return 0;
 }
 
-bool tox_group_send_private_message(Tox *tox, uint32_t group_number, uint32_t peer_id, const uint8_t *message,
-                                    size_t length, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE *error)
+bool tox_group_send_private_message(Tox *tox, uint32_t group_number, uint32_t peer_id, TOX_MESSAGE_TYPE type,
+                                    const uint8_t *message, size_t length, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE *error)
 {
     const Messenger *m = tox->m;
     GC_Chat *chat = gc_get_group(m->group_handler, group_number);
@@ -2926,7 +2926,7 @@ bool tox_group_send_private_message(Tox *tox, uint32_t group_number, uint32_t pe
         return 0;
     }
 
-    int ret = gc_send_private_message(chat, peer_id, message, length);
+    int ret = gc_send_private_message(chat, peer_id, type, message, length);
 
     switch (ret) {
         case 0:
@@ -2946,10 +2946,14 @@ bool tox_group_send_private_message(Tox *tox, uint32_t group_number, uint32_t pe
             return 0;
 
         case -4:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PERMISSIONS);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_BAD_TYPE);
             return 0;
 
         case -5:
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PERMISSIONS);
+            return 0;
+
+        case -6:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_FAIL_SEND);
             return 0;
     }
