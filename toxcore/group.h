@@ -157,7 +157,7 @@ void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, uin
 /* Set callback function for peer nickname changes.
  *
  * It gets called every time a peer changes their nickname.
- *  Function(Group_Chats *g_c, uint32_t group_number, uint32_t peernumber, const uint8_t *nick, size_t nick_len, void *userdata)
+ *  Function(Group_Chats *g_c, uint32_t group_number, uint32_t peer_number, const uint8_t *nick, size_t nick_length, void *userdata)
  */
 void g_callback_peer_name(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
                           size_t, void *));
