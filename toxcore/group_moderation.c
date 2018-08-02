@@ -323,14 +323,14 @@ int sanctions_list_pack(uint8_t *data, uint16_t length, struct GC_Sanction *sanc
         uint8_t sanctions_type = sanctions[i].type;
         if (sanctions_type < SA_OBSERVER) {
             if (sanctions_type == SA_BAN_IP_PORT) {
-                int ipp_size = pack_ip_port(data + packed_len, length - packed_len, &sanctions[i].ban_info.ip_port);
+                int ipp_size = pack_ip_port(data + packed_len, length - packed_len, &sanctions[i].ban_info.target.ip_port);
                 if (ipp_size == -1 || ipp_size + sizeof(uint16_t) + sizeof(uint32_t) + MAX_GC_NICK_SIZE > length) {
                     return -1;
                 }
 
                 packed_len += ipp_size;
             } else if (sanctions_type == SA_BAN_PUBLIC_KEY) {
-                memcpy(data + packed_len, sanctions[i].ban_info.target_pk, ENC_PUBLIC_KEY);
+                memcpy(data + packed_len, sanctions[i].ban_info.target.target_pk, ENC_PUBLIC_KEY);
                 packed_len += ENC_PUBLIC_KEY;
             }
 
@@ -345,7 +345,7 @@ int sanctions_list_pack(uint8_t *data, uint16_t length, struct GC_Sanction *sanc
                 return -1;
             }
 
-            memcpy(data + packed_len, sanctions[i].ban_info.target_pk, ENC_PUBLIC_KEY);
+            memcpy(data + packed_len, sanctions[i].ban_info.target.target_pk, ENC_PUBLIC_KEY);
             packed_len += ENC_PUBLIC_KEY;
         } else {
             return -1;
@@ -423,7 +423,7 @@ int sanctions_list_unpack(struct GC_Sanction *sanctions, struct GC_Sanction_Cred
         len_processed += TIME_STAMP_SIZE;
 
         if (sanctions[num].type < SA_OBSERVER) {
-            int ipp_size = unpack_ip_port(&sanctions[num].ban_info.ip_port, data + len_processed, length - len_processed, 1);
+            int ipp_size = unpack_ip_port(&sanctions[num].ban_info.target.ip_port, data + len_processed, length - len_processed, 1);
             if (ipp_size == -1 || ipp_size + sizeof(uint16_t) + sizeof(uint32_t) + MAX_GC_NICK_SIZE > length) {
                 return -1;
             }
@@ -442,7 +442,7 @@ int sanctions_list_unpack(struct GC_Sanction *sanctions, struct GC_Sanction_Cred
                 return -1;
             }
 
-            memcpy(sanctions[num].ban_info.target_pk, data + len_processed, ENC_PUBLIC_KEY);
+            memcpy(sanctions[num].ban_info.target.target_pk, data + len_processed, ENC_PUBLIC_KEY);
             len_processed += ENC_PUBLIC_KEY;
         } else {
             return -1;
@@ -524,11 +524,11 @@ static int sanctions_list_validate_entry(const GC_Chat *chat, struct GC_Sanction
             return -1;
         }
 
-        if (!ipport_isset(&sanction->ban_info.ip_port)) {
+        if (!ipport_isset(&sanction->ban_info.target.ip_port)) {
             return -1;
         }
 
-        if (net_family_is_tcp_family(sanction->ban_info.ip_port.ip.family)) {
+        if (net_family_is_tcp_family(sanction->ban_info.target.ip_port.ip.family)) {
             return -1;
         }
 
@@ -765,7 +765,7 @@ int sanctions_list_remove_observer(GC_Chat *chat, const uint8_t *public_key, str
             continue;
         }
 
-        if (memcmp(public_key, chat->moderation.sanctions[i].ban_info.target_pk, ENC_PUBLIC_KEY) == 0) {
+        if (memcmp(public_key, chat->moderation.sanctions[i].ban_info.target.target_pk, ENC_PUBLIC_KEY) == 0) {
             if (sanctions_list_remove_index(chat, i, creds) == -1) {
                 return -1;
             }
@@ -793,7 +793,7 @@ bool sanctions_list_is_observer(const GC_Chat *chat, const uint8_t *public_key)
             continue;
         }
 
-        if (memcmp(chat->moderation.sanctions[i].ban_info.target_pk, public_key, ENC_PUBLIC_KEY) == 0) {
+        if (memcmp(chat->moderation.sanctions[i].ban_info.target.target_pk, public_key, ENC_PUBLIC_KEY) == 0) {
             return true;
         }
     }
@@ -806,13 +806,13 @@ static bool sanctions_list_entry_exists(const GC_Chat *chat, struct GC_Sanction 
 {
     switch (sanction->type) {
         case SA_BAN_IP_PORT:
-            return sanctions_list_ip_banned(chat, &sanction->ban_info.ip_port);
+            return sanctions_list_ip_banned(chat, &sanction->ban_info.target.ip_port);
         case SA_BAN_PUBLIC_KEY:
-            return sanctions_list_pk_banned(chat, sanction->ban_info.target_pk);
+            return sanctions_list_pk_banned(chat, sanction->ban_info.target.target_pk);
         case SA_BAN_NICK:
             return sanctions_list_nick_banned(chat, sanction->ban_info.nick, sanction->ban_info.nick_length);
         case SA_OBSERVER:
-            return sanctions_list_is_observer(chat, sanction->ban_info.target_pk);
+            return sanctions_list_is_observer(chat, sanction->ban_info.target.target_pk);
         default:
             return false;
     }
@@ -999,9 +999,9 @@ int sanctions_list_make_entry(GC_Chat *chat, uint32_t peer_number, struct GC_San
             return -1;
         }
 
-        ipport_copy(&sanction->ban_info.ip_port, &gconn->addr.ip_port);
+        ipport_copy(&sanction->ban_info.target.ip_port, &gconn->addr.ip_port);
     } else if (type == SA_OBSERVER || type == SA_BAN_PUBLIC_KEY) {
-        memcpy(sanction->ban_info.target_pk, gconn->addr.public_key, ENC_PUBLIC_KEY);
+        memcpy(sanction->ban_info.target.target_pk, gconn->addr.public_key, ENC_PUBLIC_KEY);
     } else if (type != SA_BAN_NICK) {
         return -1;
     }
@@ -1090,7 +1090,7 @@ bool sanctions_list_ip_banned(const GC_Chat *chat, IP_Port *ip_port)
             continue;
         }
 
-        if (ip_equal(&chat->moderation.sanctions[i].ban_info.ip_port.ip, &ip_port->ip)) {
+        if (ip_equal(&chat->moderation.sanctions[i].ban_info.target.ip_port.ip, &ip_port->ip)) {
             return true;
         }
     }
@@ -1107,7 +1107,7 @@ bool sanctions_list_pk_banned(const GC_Chat *chat, const uint8_t *public_key)
             continue;
         }
 
-        if (!memcpy(chat->moderation.sanctions[i].ban_info.target_pk, public_key, ENC_PUBLIC_KEY)) {
+        if (!memcpy(chat->moderation.sanctions[i].ban_info.target.target_pk, public_key, ENC_PUBLIC_KEY)) {
             return true;
         }
     }

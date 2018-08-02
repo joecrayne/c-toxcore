@@ -40,7 +40,7 @@ struct GC_Ban {
     union {
         IP_Port ip_port;
         uint8_t target_pk[ENC_PUBLIC_KEY];
-    };
+    } target;
 
     uint8_t     nick[MAX_GC_NICK_SIZE];
     uint16_t    nick_length;
