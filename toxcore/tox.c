@@ -2802,7 +2802,7 @@ uint32_t tox_group_get_number_groups(const Tox *tox)
 
 void tox_groups_get_list(const Tox *tox, uint32_t *list)
 {
-    const Messenger *m = tox;
+    const Messenger *m = tox->m;
     const GC_Session *c = m->group_handler;
 
     gc_copy_groups_numbers(c, list);
@@ -3418,7 +3418,7 @@ bool tox_group_ban_get_list(const Tox *tox, uint32_t group_number, uint32_t *lis
 TOX_GROUP_BAN_TYPE tox_group_ban_get_type(const Tox *tox, uint32_t group_number, uint32_t ban_id,
                                           TOX_ERR_GROUP_BAN_QUERY *error)
 {
-    const Messenger *m = tox;
+    const Messenger *m = tox->m;
     const GC_Chat *chat = gc_get_group(m->group_handler, group_number);
 
     if (chat == nullptr) {
