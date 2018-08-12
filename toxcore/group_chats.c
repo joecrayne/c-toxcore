@@ -897,7 +897,7 @@ static int send_lossless_group_packet(GC_Chat *chat, GC_Connection *gconn, const
     }
 
     uint64_t message_id = gconn->send_message_id;
-    fprintf(stderr, "send_lossless_group_packet (type: %u, id: %d)\n", packet_type, message_id);
+    fprintf(stderr, "send_lossless_group_packet (type: %u, id: %lu)\n", packet_type, (unsigned long)message_id);
     uint8_t packet[MAX_GC_PACKET_SIZE];
     int len = wrap_group_packet(chat->self_public_key, gconn->shared_key, packet, sizeof(packet), data, length,
                                 message_id, packet_type, chat->chat_id_hash, NET_PACKET_GC_LOSSLESS);
@@ -4379,7 +4379,7 @@ static int handle_gc_handshake_response(Messenger *m, int group_number, const ui
 
     /* This packet is an implied handshake request acknowledgement */
     gconn->received_message_id++;
-    fprintf(stderr, "handshake resp gconn->received_message_id++ %d\n", gconn->received_message_id);
+    fprintf(stderr, "handshake resp gconn->received_message_id++ %lu\n", (unsigned long)gconn->received_message_id);
 
     gconn->handshaked = true;
     fprintf(stderr, "handshaked - resp\n");
@@ -4564,7 +4564,7 @@ static int handle_gc_handshake_request(Messenger *m, int group_number, IP_Port *
     }
 
     gconn->received_message_id++;
-    fprintf(stderr, "handshake req gconn->received_message_id++ %d\n", gconn->received_message_id);
+    fprintf(stderr, "handshake req gconn->received_message_id++ %lu\n", (unsigned long)gconn->received_message_id);
     fprintf(stderr, "in handle gc hs request7\n");
 
     if (!ipp) {

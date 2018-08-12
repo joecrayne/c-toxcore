@@ -156,7 +156,7 @@ int create_gc_announce_request(uint8_t *packet, uint16_t max_packet_length, cons
 
     uint32_t full_length = (uint32_t)len + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE;
     if (full_length != ONION_ANNOUNCE_REQUEST_MIN_SIZE + gc_data_length) {
-        fprintf(stderr, "err %d %d %d\n", len, full_length, encrypted_size);
+        fprintf(stderr, "err %d %d %zu\n", len, full_length, encrypted_size);
         return -1;
     }
 
@@ -519,7 +519,7 @@ static int handle_gc_announce_request(Onion_Announce *onion_a, IP_Port source, c
     }
 
     offset += announces_length;
-    fprintf(stderr, "announces_length: %d\n", announces_length);
+    fprintf(stderr, "announces_length: %zu\n", announces_length);
 
     uint8_t data[ONION_ANNOUNCE_RESPONSE_MAX_SIZE];
     len = encrypt_data_symmetric(shared_key, nonce, pl, offset,
