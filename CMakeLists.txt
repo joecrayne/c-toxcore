@@ -376,14 +376,6 @@ function(auto_test target)
   endif()
 endfunction()
 
-if(BUILD_TOXAV)
-  add_definitions(-D__STDC_LIMIT_MACROS=1)
-  add_executable(auto_monolith_test ${CPUFEATURES}
-    auto_tests/monolith_test.cc)
-  target_link_libraries(auto_monolith_test ${toxcore_LINK_MODULES})
-  add_test(NAME monolith COMMAND ${CROSSCOMPILING_EMULATOR} auto_monolith_test)
-endif()
-
 auto_test(TCP)
 auto_test(bootstrap)
 auto_test(conference)
