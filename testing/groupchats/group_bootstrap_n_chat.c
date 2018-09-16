@@ -52,10 +52,10 @@ int main(int argc, char *argv[])
     printf("Bootstrapping from node\n");
 
     for (i = 1; i < PEERCOUNT; i++) {
-        DHT_bootstrap(tox[0]->dht, ip_port, dht_get_self_public_key(tox[0]->dht));
+        dht_bootstrap(tox[0]->dht, ip_port, dht_get_self_public_key(tox[0]->dht));
     }
 
-    DHT_bootstrap(chat->dht, ip_port, dht_get_self_public_key(tox[0]->dht));
+    dht_bootstrap(chat->dht, ip_port, dht_get_self_public_key(tox[0]->dht));
 
     printf("Waiting until every Tox is connected\n");
 
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
         int numconnected = 0;
 
         for (i = 0; i < PEERCOUNT; i++) {
-            numconnected += DHT_isconnected(tox[i]->dht);
+            numconnected += dht_isconnected(tox[i]->dht);
         }
 
         //printf("%d\n", numconnected);

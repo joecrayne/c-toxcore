@@ -79,7 +79,7 @@ static void basicannouncetest(void)
         ip_port.port = net_port(dht_get_net(target->dht));
         const uint8_t *key = dht_get_self_public_key(target->dht);
 
-        DHT_bootstrap(peers[i].tox->dht, ip_port, key);
+        dht_bootstrap(peers[i].tox->dht, ip_port, key);
     }
 
 
@@ -91,7 +91,7 @@ static void basicannouncetest(void)
         int numconnected = 0;
 
         for (i = 0; i < PEERCOUNT; i++) {
-            numconnected += DHT_isconnected(peers[i].tox->dht);
+            numconnected += dht_isconnected(peers[i].tox->dht);
         }
 
         if (numconnected == PEERCOUNT * min(PEERCOUNT - 1, LCLIENT_LIST)) {

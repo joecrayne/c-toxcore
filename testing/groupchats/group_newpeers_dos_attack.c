@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 
 
     for (i = 0; i < PEERCOUNT; i++) {
-        int res = DHT_bootstrap_from_address(tox[i]->dht, argv[argvoffset + 1], options.ipv6enabled, port, bnode_dht_key);
+        int res = dht_bootstrap_from_address(tox[i]->dht, argv[argvoffset + 1], options.ipv6enabled, port, bnode_dht_key);
 
         if (!res) {
             printf("Bootstrap failed\n");
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
         int numconnected = 0;
 
         for (i = 0; i < PEERCOUNT; i++) {
-            numconnected += DHT_isconnected(tox[i]->dht);
+            numconnected += dht_isconnected(tox[i]->dht);
         }
 
         printf("%d\n", numconnected);
