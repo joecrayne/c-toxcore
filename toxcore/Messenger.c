@@ -3012,6 +3012,23 @@ uint32_t messenger_size(const Messenger *m)
              + sizesubhead;
 }
 
+static const char *m_state_type_name(uint16_t type)
+{
+  switch (type) {
+  case MESSENGER_STATE_TYPE_NOSPAMKEYS: return "NOSPAMKEYS";
+  case MESSENGER_STATE_TYPE_DHT: return "DHT";
+  case MESSENGER_STATE_TYPE_FRIENDS: return "FRIENDS";
+  case MESSENGER_STATE_TYPE_NAME: return "NAME";
+  case MESSENGER_STATE_TYPE_STATUSMESSAGE: return "STATUSMESSAGE";
+  case MESSENGER_STATE_TYPE_STATUS: return "STATUS";
+  case MESSENGER_STATE_TYPE_GROUPS: return "GROUPS";
+  case MESSENGER_STATE_TYPE_TCP_RELAY: return "TCP_RELAY";
+  case MESSENGER_STATE_TYPE_PATH_NODE: return "PATH_NODE";
+  case MESSENGER_STATE_TYPE_END: return "END";
+  }
+  return "<unknown>";
+}
+
 /* Save the messenger in data of size Messenger_size(). */
 void messenger_save(const Messenger *m, uint8_t *data)
 {
@@ -3027,7 +3044,13 @@ void messenger_save(const Messenger *m, uint8_t *data)
 
     for (uint8_t i = 0; i < m->options.state_plugins_length; ++i) {
         const Messenger_State_Plugin plugin = m->options.state_plugins[i];
-        data = plugin.save(m, data);
+        printf("save: %s\n", m_state_type_name(plugin.type));
+        uint8_t *next_data = plugin.save(m, data);
+        printf("save: %d vs. %zd\n", plugin.size(m), next_data - data - sizeof(uint32_t) * 2);
+#if 0
+        assert(next_data - data - sizeof(uint32_t) * 2 == 0
+          || plugin.size(m) == next_data - data - sizeof(uint32_t) * 2);
+#endif
     }
 }
 
@@ -3062,8 +3085,8 @@ static uint8_t *save_nospam_keys(const Messenger *m, uint8_t *data)
     data = state_write_section_header(data, MESSENGER_STATE_COOKIE_TYPE, len, MESSENGER_STATE_TYPE_NOSPAMKEYS);
     uint32_t nospam = get_nospam(m->fr);
     host_to_lendian32(data, nospam);
-    save_keys(m->net_crypto, data + sizeof(uint32_t));
-    data += len;
+    data += sizeof(uint32_t);
+    data = save_keys(m->net_crypto, data);
     return data;
 }
 
@@ -3196,6 +3219,8 @@ static State_Load_Status friends_list_load(Messenger *m, const uint8_t *data, ui
 #ifndef VANILLA_NACL
 static uint32_t saved_groups_size(const Messenger *m)
 {
+    printf("groups: %d\n", gc_count_groups(m->group_handler));
+    printf("groups size: %zd\n", gc_count_groups(m->group_handler) * sizeof(struct Saved_Group));
     return gc_count_groups(m->group_handler) * sizeof(struct Saved_Group);
 }
 
@@ -3250,6 +3275,10 @@ static uint8_t *groups_save(const Messenger *m, uint8_t *data)
         }
     }
 
+    assert(num == gc_count_groups(m->group_handler));
+    assert(num * sizeof(struct Saved_Group) == saved_groups_size(m));
+    printf("groups: %d\n", gc_count_groups(m->group_handler));
+    printf("num == %zd\n", num * sizeof(struct Saved_Group));
     return data + num * sizeof(struct Saved_Group);
 }
 
@@ -3465,6 +3494,7 @@ static State_Load_Status messenger_load_state_callback(void *outer, const uint8_
         const Messenger_State_Plugin *const plugin = &m->options.state_plugins[i];
 
         if (plugin->type == type) {
+            printf("load: %s\n", m_state_type_name(plugin->type));
             return plugin->load(m, data, length);
         }
     }

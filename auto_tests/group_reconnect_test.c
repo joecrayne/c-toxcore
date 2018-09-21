@@ -22,10 +22,7 @@ typedef struct State {
 static void group_invite_handler(Tox *tox, uint32_t friend_number, const uint8_t *invite_data, size_t length,
                                  void *user_data)
 {
-    printf("invite arrived; accepting\n");
-    TOX_ERR_GROUP_INVITE_ACCEPT err_accept;
-    tox_group_invite_accept(tox, invite_data, length, nullptr, 0, &err_accept);
-    ck_assert(err_accept == TOX_ERR_GROUP_INVITE_ACCEPT_OK);
+    ck_abort_msg("we should not get invited");
 }
 
 static const char *tox_str_group_join_fail(TOX_GROUP_JOIN_FAIL v)
@@ -101,8 +98,6 @@ static void group_message_test(Tox **toxes, State *state)
     tox_group_join(toxes[1], chat_id, nullptr, 0, &err_join);
     ck_assert(err_join == TOX_ERR_GROUP_JOIN_OK);
 
-    toxes[0] = reload_tox(toxes[0], toxes[1], &state[0].index);
-
     while (!state[0].message_received) {
         tox_iterate(toxes[0], &state[0]);
         tox_iterate(toxes[1], &state[1]);
@@ -113,6 +108,27 @@ static void group_message_test(Tox **toxes, State *state)
             ck_assert(err_send == TOX_ERR_GROUP_SEND_MESSAGE_OK);
             state[1].message_sent = true;
         }
+
+        c_sleep(ITERATION_INTERVAL);
+    }
+
+    size_t savedata_size = tox_get_savedata_size(toxes[0]);
+    uint8_t *savedata = (uint8_t *)malloc(savedata_size);
+    tox_get_savedata(toxes[0], savedata);
+
+    tox_kill(toxes[0]);
+
+    struct Tox_Options *opts = tox_options_new(nullptr);
+    tox_options_set_savedata_type(opts, TOX_SAVEDATA_TYPE_TOX_SAVE);
+    tox_options_set_savedata_data(opts, savedata, savedata_size);
+    tox_options_set_savedata_length(opts, savedata_size);
+    toxes[0] = tox_new_log(opts, nullptr, &state[0].index);
+    tox_options_free(opts);
+    ck_assert_msg(toxes[0], "failed to re-initialise tox 0");
+
+    while (true) {
+        tox_iterate(toxes[0], &state[0]);
+        tox_iterate(toxes[1], &state[1]);
 
         c_sleep(ITERATION_INTERVAL);
     }

@@ -334,9 +334,8 @@ Crypto_Conn_State crypto_connection_status(const Net_Crypto *c, int crypt_connec
 void new_keys(Net_Crypto *c);
 
 /* Save the public and private keys to the keys array.
- *  Length must be CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE.
  */
-void save_keys(const Net_Crypto *c, uint8_t *keys);
+uint8_t *save_keys(const Net_Crypto *c, uint8_t *keys);
 
 /* Load the secret key.
  * Length must be CRYPTO_SECRET_KEY_SIZE.

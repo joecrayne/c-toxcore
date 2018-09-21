@@ -218,6 +218,33 @@ Tox *tox_new_log(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_d
     return tox_new_log_lan(options, err, log_user_data, false);
 }
 
+Tox *reload_tox(Tox *tox, Tox *bootstrap, void *log_user_data)
+{
+    size_t savedata_size = tox_get_savedata_size(tox);
+    uint8_t *savedata = (uint8_t *)malloc(savedata_size);
+    tox_get_savedata(tox, savedata);
+
+    tox_kill(tox);
+
+    struct Tox_Options *opts = tox_options_new(nullptr);
+    assert(opts != nullptr);
+    tox_options_set_savedata_type(opts, TOX_SAVEDATA_TYPE_TOX_SAVE);
+    tox_options_set_savedata_data(opts, savedata, savedata_size);
+
+    tox = tox_new_log(opts, nullptr, log_user_data);
+    assert(tox != nullptr);
+
+    tox_options_free(opts);
+    free(savedata);
+
+    uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
+    tox_self_get_dht_id(bootstrap, dht_key);
+    const uint16_t dht_port = tox_self_get_udp_port(bootstrap, nullptr);
+
+    tox_bootstrap(tox, "localhost", dht_port, dht_key, nullptr);
+
+    return tox;
+}
 
 #ifndef VANILLA_NACL
 static const char *test_rng_name(void)

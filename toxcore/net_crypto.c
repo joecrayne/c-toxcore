@@ -2924,10 +2924,13 @@ void new_keys(Net_Crypto *c)
  *
  * TODO(irungentoo): Save only secret key.
  */
-void save_keys(const Net_Crypto *c, uint8_t *keys)
+uint8_t *save_keys(const Net_Crypto *c, uint8_t *keys)
 {
     memcpy(keys, c->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    memcpy(keys + CRYPTO_PUBLIC_KEY_SIZE, c->self_secret_key, CRYPTO_SECRET_KEY_SIZE);
+    keys += CRYPTO_PUBLIC_KEY_SIZE;
+    memcpy(keys, c->self_secret_key, CRYPTO_SECRET_KEY_SIZE);
+    keys += CRYPTO_SECRET_KEY_SIZE;
+    return keys;
 }
 
 /* Load the secret key.
