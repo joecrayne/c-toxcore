@@ -1,0 +1,14 @@
+FROM alpine
+MAINTAINER iphydf@gmail.com
+
+RUN apk --no-cache add binutils gcc g++ git linux-headers musl-dev \
+ && wget -q -O /etc/apk/keys/david@ostrovsky.org-5a0369d6.rsa.pub \
+      https://raw.githubusercontent.com/davido/bazel-alpine-package/master/david@ostrovsky.org-5a0369d6.rsa.pub \
+ && wget https://github.com/davido/bazel-alpine-package/releases/download/0.15.2/bazel-0.15.2-r0.apk \
+ && apk add bazel-0.15.2-r0.apk
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
+
+RUN git clone --depth=1 https://github.com/TokTok/toktok-stack
+WORKDIR /toktok-stack
+COPY . /toktok-stack/c-toxcore
+RUN bazel build --curses=no --linkopt="-static" -c opt //c-toxcore/other/bootstrap_daemon
