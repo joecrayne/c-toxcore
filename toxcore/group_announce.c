@@ -6,9 +6,6 @@
 #include <wchar.h>
 #include <stdio.h>
 
-#include "util.h"
-
-
 static void remove_announces(GC_Announces_List *gc_announces_list, GC_Announces *announces) {
     if (announces->prev_announce) {
         announces->prev_announce->next_announce = announces->next_announce;

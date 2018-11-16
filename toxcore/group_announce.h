@@ -1,5 +1,6 @@
 /*
- * group_announce.h -- Similar to ping.h, but designed for group chat purposes
+ * group_announce.h -- Group chat data store and announcement serialization
+ *                     routines.
  *
  *  Copyright (C) 2015 Tox project All Rights Reserved.
  *
@@ -39,7 +40,7 @@ typedef struct GC_Announces GC_Announces;
 typedef struct GC_Announces_List GC_Announces_List;
 typedef struct GC_Public_Announce GC_Public_Announce;
 
-// Base announce
+// Contact information for a group member. Base announce.
 struct GC_Announce {
     Node_format tcp_relays[MAX_ANNOUNCED_TCP_RELAYS];
     uint8_t tcp_relays_count;
@@ -48,11 +49,11 @@ struct GC_Announce {
     uint8_t peer_public_key[ENC_PUBLIC_KEY];
 };
 
-// Peer announce for specific group
+// Chatroom member announced information.
 struct GC_Peer_Announce {
     GC_Announce base_announce;
 
-    uint64_t timestamp;
+    uint64_t timestamp; // When this entry was added.  XXX: Currently not used or shared.
 };
 
 // Used for announces in public groups
@@ -62,11 +63,13 @@ struct GC_Public_Announce {
     uint8_t chat_public_key[ENC_PUBLIC_KEY];
 };
 
+// Stored information for a group chat.
 struct GC_Announces {
     uint8_t chat_id[CHAT_ID_SIZE];
-    uint64_t index;
+    uint64_t index; // Where to store the next entry in announces buffer.
     uint64_t last_announce_received_timestamp;
 
+    // Stored members of this chat.
     GC_Peer_Announce announces[MAX_GCA_SAVED_ANNOUNCES_PER_GC];
 
     GC_Announces *next_announce;
@@ -81,13 +84,20 @@ struct GC_Announces_List {
 
 GC_Announces_List *new_gca_list();
 
+// Free a list of announce entries.
 void kill_gca(GC_Announces_List *announces_list);
 
+// Discard timed-out anounce entries.
 void do_gca(const Mono_Time *mono_time, GC_Announces_List *gc_announces_list);
 
+// Discard the announce entry matching the given chat_id.  Returns false if
+// there was no match.
 bool cleanup_gca(GC_Announces_List *announces_list, const uint8_t *chat_id);
 
 
+// Store a list of groupchat members in the supplied gc_announces buffer that
+// the owner of except_public_key can connect to in order to participate in
+// their chat.
 int get_gc_announces(GC_Announces_List *gc_announces_list, GC_Announce *gc_announces, uint8_t max_nodes,
                      const uint8_t *chat_id, const uint8_t *except_public_key);
 
@@ -107,6 +117,7 @@ int pack_public_announce(uint8_t *data, uint16_t length, GC_Public_Announce *ann
 
 int unpack_public_announce(uint8_t *data, uint16_t length, GC_Public_Announce *announce);
 
+// Returns true if a tcp relay is provided, or if a lan ip address is set.
 bool is_valid_announce(const GC_Announce *announce);
 
 #endif /* GROUP_ANNOUNCE_H */
