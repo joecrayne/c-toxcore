@@ -491,13 +491,13 @@ static int handle_gc_announce_request(Onion_Announce *onion_a, IP_Port source, c
     int nodes_length = 0;
 
     if (num_nodes != 0) {
-        nodes_length = pack_nodes(pl + 2 + ONION_PING_ID_SIZE, sizeof(nodes_list), nodes_list, num_nodes);
+        nodes_length = pack_nodes(pl + 1 + ONION_PING_ID_SIZE, sizeof(nodes_list), nodes_list, num_nodes);
 
         if (nodes_length <= 0)
             return 1;
     }
 
-    pl[1 + ONION_PING_ID_SIZE] = (uint8_t)num_nodes;
+    pl[1 + ONION_PING_ID_SIZE + nodes_length] = (uint8_t)TOX_AF_UNSPEC; // List terminator for unpack_nodes().
 
     GC_Announces_List *gc_announces_list = onion_a->gc_announces_list;
     GC_Public_Announce public_announce;
@@ -596,7 +596,7 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
     uint8_t nonce[CRYPTO_NONCE_SIZE];
     random_nonce(nonce);
 
-    uint8_t pl[2 + ONION_PING_ID_SIZE + sizeof(nodes_list)];
+    uint8_t pl[1 + ONION_PING_ID_SIZE + sizeof(nodes_list)];
 
     if (index == -1) {
         pl[0] = 0;
@@ -619,20 +619,18 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
     int nodes_length = 0;
 
     if (num_nodes != 0) {
-        nodes_length = pack_nodes(pl + 2 + ONION_PING_ID_SIZE, sizeof(nodes_list), nodes_list, num_nodes);
+        nodes_length = pack_nodes(pl + 1 + ONION_PING_ID_SIZE, sizeof(nodes_list), nodes_list, num_nodes);
 
         if (nodes_length <= 0) {
             return 1;
         }
     }
 
-    pl[1 + ONION_PING_ID_SIZE] = (uint8_t)num_nodes;
-
     uint8_t data[ONION_ANNOUNCE_RESPONSE_MAX_SIZE];
-    len = encrypt_data_symmetric(shared_key, nonce, pl, 2 + ONION_PING_ID_SIZE + nodes_length,
+    len = encrypt_data_symmetric(shared_key, nonce, pl, 1 + ONION_PING_ID_SIZE + nodes_length,
                                  data + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE);
 
-    if (len != 2 + ONION_PING_ID_SIZE + nodes_length + CRYPTO_MAC_SIZE) {
+    if (len != 1 + ONION_PING_ID_SIZE + nodes_length + CRYPTO_MAC_SIZE) {
         return 1;
     }
 

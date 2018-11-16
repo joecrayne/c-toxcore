@@ -797,26 +797,21 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
     }
 
     uint16_t len_nodes = 0;
-    uint8_t nodes_count = plain[1 + ONION_PING_ID_SIZE];
-    if (nodes_count > 0) {
-        if (nodes_count > MAX_SENT_NODES) {
-            return 1;
-        }
+    Node_format nodes[MAX_SENT_NODES];
+    int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, &len_nodes, plain + 1 + ONION_PING_ID_SIZE,
+                                 plain_size - 1 - ONION_PING_ID_SIZE, 0);
 
-        Node_format nodes[MAX_SENT_NODES];
-        int num_nodes = unpack_nodes(nodes, nodes_count, &len_nodes, plain + 2 + ONION_PING_ID_SIZE,
-                                     plain_size - 2 - ONION_PING_ID_SIZE, 0);
-
-        if (num_nodes < 0) {
-            return 1;
-        }
-
-        if (client_ping_nodes(onion_c, num, nodes, num_nodes, source) == -1) {
-            return 1;
-        }
+    if (num_nodes < 0) {
+        return 1;
     }
 
-    if (len_nodes + 1 < length - ONION_ANNOUNCE_RESPONSE_MIN_SIZE) {
+    if (client_ping_nodes(onion_c, num, nodes, num_nodes, source) == -1) {
+        return 1;
+    }
+
+    // If we didn't consume the entire packet, then it must be a groupchat
+    // announce response.
+    if (len_nodes < length - ONION_ANNOUNCE_RESPONSE_MIN_SIZE) {
         fprintf(stderr, "gc ann resp\n");
         GC_Announce announces[MAX_SENT_ANNOUNCES];
 
@@ -826,7 +821,7 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
             return 1;
         }
 
-        int offset = 2 + ONION_PING_ID_SIZE + len_nodes;
+        int offset = 1 + ONION_PING_ID_SIZE + len_nodes;
         fprintf(stderr, "gc ann pre resp %d\n", plain_size - offset);
         int gc_announces_count = unpack_announces_list(plain + offset, plain_size - offset,
                                                        announces, MAX_SENT_ANNOUNCES, nullptr);
