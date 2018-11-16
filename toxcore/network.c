@@ -659,9 +659,9 @@ int networking_at_startup(void)
         return -1;
     }
 
-#endif /* USE_RANDOMBYTES_STIR */
+#endif /*USE_RANDOMBYTES_STIR*/
 
-#endif /* VANILLA_NACL */
+#endif/*VANILLA_NACL*/
 
 #ifdef OS_WIN32
     WSADATA wsaData;
