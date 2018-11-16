@@ -164,11 +164,6 @@ static void bytes(uint8_t[length] bytes);
 }
 
 /**
- * Return a value between 0 and upper_bound using a uniform distribution.
- */
-static uint32_t random_int_range(uint32_t upper_bound);
-
-/**
  * Check if a Tox public key CRYPTO_PUBLIC_KEY_SIZE is valid or not. This
  * should only be used for input validation.
  *
