@@ -285,7 +285,7 @@ uint16_t sanctions_creds_pack(struct GC_Sanction_Creds *creds, uint8_t *data, ui
 
     uint16_t packed_len = 0;
 
-    u32_to_bytes(data + packed_len, creds->version);
+    put_be32(data + packed_len, creds->version);
     packed_len += sizeof(uint32_t);
     memcpy(data + packed_len, creds->hash, GC_MODERATION_HASH_SIZE);
     packed_len += GC_MODERATION_HASH_SIZE;
@@ -317,12 +317,12 @@ int sanctions_list_pack(uint8_t *data, uint16_t length, struct GC_Sanction *sanc
         packed_len += sizeof(uint8_t);
         memcpy(data + packed_len, sanctions[i].public_sig_key, SIG_PUBLIC_KEY);
         packed_len += SIG_PUBLIC_KEY;
-        u64_to_bytes(data + packed_len, sanctions[i].time_set);
+        put_be64(data + packed_len, sanctions[i].time_set);
         packed_len += TIME_STAMP_SIZE;
 
         uint8_t sanctions_type = sanctions[i].type;
         if (sanctions_type < SA_OBSERVER) {
-            u32_to_bytes(data + packed_len, sanctions[i].ban_info.id);
+            put_be32(data + packed_len, sanctions[i].ban_info.id);
             packed_len += sizeof(uint32_t);
 
             if (sanctions_type == SA_BAN_IP_PORT) {
@@ -386,7 +386,7 @@ uint16_t sanctions_creds_unpack(struct GC_Sanction_Creds *creds, const uint8_t *
 
     uint16_t len_processed = 0;
 
-    bytes_to_U32(&creds->version, data + len_processed);
+    get_be32(&creds->version, data + len_processed);
     len_processed += sizeof(uint32_t);
     memcpy(creds->hash, data + len_processed, GC_MODERATION_HASH_SIZE);
     len_processed += GC_MODERATION_HASH_SIZE;
@@ -420,11 +420,11 @@ int sanctions_list_unpack(struct GC_Sanction *sanctions, struct GC_Sanction_Cred
         len_processed += sizeof(uint8_t);
         memcpy(sanctions[num].public_sig_key, data + len_processed, SIG_PUBLIC_KEY);
         len_processed += SIG_PUBLIC_KEY;
-        bytes_to_U64(&sanctions[num].time_set, data + len_processed);
+        get_be64(&sanctions[num].time_set, data + len_processed);
         len_processed += TIME_STAMP_SIZE;
 
         if (sanctions[num].type < SA_OBSERVER) {
-            bytes_to_U32(&sanctions[num].ban_info.id, data + len_processed);
+            get_be32(&sanctions[num].ban_info.id, data + len_processed);
             len_processed += sizeof(uint32_t);
 
             if (sanction_type == SA_BAN_IP_PORT) {
