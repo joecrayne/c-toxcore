@@ -113,11 +113,6 @@ typedef enum Net_Packet_Type {
     NET_PACKET_GC_HANDSHAKE         = 0x5a, /* Group chat handshake packet ID */
     NET_PACKET_GC_LOSSLESS          = 0x5b, /* Group chat lossless packet ID */
     NET_PACKET_GC_LOSSY             = 0x5c, /* Group chat lossy packet ID */
-    NET_PACKET_GCA_ANNOUNCE         = 0x5d, /* Group announce announcement packet ID */
-    NET_PACKET_GCA_GET_NODES        = 0x5e, /* Group announce get nodes request packet ID */
-    NET_PACKET_GCA_SEND_NODES       = 0x5f, /* Group announce send nodes packet ID */
-    NET_PACKET_GCA_PING_REQUEST     = 0x60, /* Group announce ping request packet ID */
-    NET_PACKET_GCA_PING_RESPONSE    = 0x61, /* Group announce ping response packet ID */
 
     /* See: docs/Prevent_Tracking.txt and onion.{c,h} */
     NET_PACKET_ONION_SEND_INITIAL   = 0x80,
