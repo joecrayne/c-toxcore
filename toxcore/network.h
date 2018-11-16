@@ -96,7 +96,7 @@ Socket net_accept(Socket sock);
  */
 size_t net_socket_data_recv_buffer(Socket sock);
 
-#define MAX_UDP_PACKET_SIZE 65507
+#define MAX_UDP_PACKET_SIZE 2048
 
 typedef enum Net_Packet_Type {
     NET_PACKET_PING_REQUEST         = 0x00, /* Ping request packet ID. */
