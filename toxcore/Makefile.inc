@@ -38,6 +38,8 @@ libtoxcore_la_SOURCES = ../toxcore/ccompat.h \
                         ../toxcore/util.c \
                         ../toxcore/group.h \
                         ../toxcore/group.c \
+                        ../toxcore/group_announce.h \
+                        ../toxcore/group_announce.c \
                         ../toxcore/onion.h \
                         ../toxcore/onion.c \
                         ../toxcore/logger.h \
