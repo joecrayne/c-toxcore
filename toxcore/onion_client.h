@@ -28,6 +28,7 @@
 #include "net_crypto.h"
 #include "onion_announce.h"
 #include "ping_array.h"
+#include "group_announce.h"
 
 #define MAX_ONION_CLIENTS 8
 #define MAX_ONION_CLIENTS_ANNOUNCE 12 // Number of nodes to announce ourselves to.
@@ -53,6 +54,8 @@
 #define ONION_NODE_MAX_PINGS 3
 
 #define MAX_PATH_NODES 32
+
+#define GC_MAX_DATA_LENGTH GC_PUBLIC_ANNOUNCE_MAX_SIZE
 
 /* If no announce response packets are received within this interval tox will
  * be considered offline. We give time for a node to be pinged often enough
@@ -198,5 +201,14 @@ void kill_onion_client(Onion_Client *onion_c);
  *  return 2 if we are also connected with UDP.
  */
 unsigned int onion_connection_status(const Onion_Client *onion_c);
+
+typedef struct GroupChatInfo {
+    uint8_t data[GC_MAX_DATA_LENGTH];
+    uint8_t public_key[ENC_PUBLIC_KEY];
+    short data_length;
+} GroupChatInfo;
+
+/* Returns null if the supplied friend_number is too large. */
+GroupChatInfo *onion_gc_info(Onion_Client *onion_c, int friend_number);
 
 #endif

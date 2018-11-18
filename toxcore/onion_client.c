@@ -103,6 +103,8 @@ typedef struct Onion_Friend {
     uint32_t dht_pk_callback_number;
 
     uint32_t run_count;
+
+    GroupChatInfo gc;
 } Onion_Friend;
 
 typedef struct Onion_Data_Handler {
@@ -1917,4 +1919,11 @@ void kill_onion_client(Onion_Client *onion_c)
     set_onion_packet_tcp_connection_callback(nc_get_tcp_c(onion_c->c), nullptr, nullptr);
     crypto_memzero(onion_c, sizeof(Onion_Client));
     free(onion_c);
+}
+
+GroupChatInfo *onion_gc_info(Onion_Client *onion_c, int friend_number)
+{
+    return friend_number < onion_c->num_friends
+        ?  &onion_c->friends_list[friend_number].gc
+        :  NULL;
 }
