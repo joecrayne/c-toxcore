@@ -94,6 +94,9 @@ uint16_t min_u16(uint16_t a, uint16_t b);
 uint32_t min_u32(uint32_t a, uint32_t b);
 uint64_t min_u64(uint64_t a, uint64_t b);
 
+/* Returns a 32-bit hash of key of size len */
+uint32_t jenkins_one_at_a_time_hash(const uint8_t *key, size_t len);
+
 #define IDSTRING_LEN (CRYPTO_PUBLIC_KEY_SIZE * 2 + 1)
 char *id_to_string(const uint8_t *pk, char *id_str, size_t length);
 
