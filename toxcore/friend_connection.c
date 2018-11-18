@@ -278,7 +278,7 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
         return 0;
     }
 
-    Node_format nodes[MAX_SHARED_RELAYS];
+    Node_format nodes[MAX_SHARED_RELAYS] = {{{0}}};
     uint8_t data[1024];
 
     const int n = copy_connected_tcp_relays(fr_c->net_crypto, nodes, MAX_SHARED_RELAYS);
@@ -971,4 +971,16 @@ void kill_friend_connections(Friend_Connections *fr_c)
     }
 
     free(fr_c);
+}
+
+const IP_Port *friendconn_dht_ip_port(const Friend_Connections *fr_c, int friend_connection_id)
+{
+    Friend_Conn *connection = &fr_c->conns[friend_connection_id];
+    return &connection->dht_ip_port;
+}
+
+int friendconn_onion_friend_number(const Friend_Connections *fr_c, int friend_connection_id)
+{
+	Friend_Conn *connection = &fr_c->conns[friend_connection_id];
+	return connection->onion_friendnum;
 }

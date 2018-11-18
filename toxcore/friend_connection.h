@@ -65,6 +65,10 @@ typedef struct Friend_Connections Friend_Connections;
 
 Net_Crypto *friendconn_net_crypto(const Friend_Connections *fr_c);
 
+int friendconn_onion_friend_number(const Friend_Connections *fr_c, int friend_connection_id);
+
+const IP_Port *friendconn_dht_ip_port(const Friend_Connections *fr_c, int friend_connection_id);
+
 /* return friendcon_id corresponding to the real public key on success.
  * return -1 on failure.
  */
