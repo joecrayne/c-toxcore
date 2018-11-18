@@ -31,6 +31,8 @@
 #include "net_crypto.h"
 #include "state.h"
 
+typedef struct GC_Session GC_Session;
+typedef struct GC_Announces_List GC_Announces_List;
 typedef struct GC_Chat GC_Chat;
 
 #define MAX_NAME_LENGTH 128
@@ -281,6 +283,9 @@ struct Messenger {
     uint32_t numfriends;
 
     time_t lastdump;
+
+    GC_Session *group_handler;
+    GC_Announces_List *group_announce;
 
     bool has_added_relays; // If the first connection has occurred in do_messenger
 
