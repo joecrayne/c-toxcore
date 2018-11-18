@@ -212,6 +212,8 @@ typedef void m_friend_connectionstatuschange_internal_cb(Messenger *m, uint32_t 
         uint8_t connection_status, void *user_data);
 typedef void m_conference_invite_cb(Messenger *m, uint32_t friend_number, const uint8_t *cookie, uint16_t length,
                                     void *user_data);
+typedef void m_group_invite_cb(Messenger *m, uint32_t friendnumber, const uint8_t *data, size_t length,
+                               const uint8_t *group_name, size_t group_name_length, void *userdata);
 typedef void m_msi_packet_cb(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length,
                              void *user_data);
 typedef int m_lossy_rtp_packet_cb(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object);
@@ -304,6 +306,9 @@ struct Messenger {
 
     struct Group_Chats *conferences_object; /* Set by new_groupchats()*/
     m_conference_invite_cb *conference_invite;
+
+    m_group_invite_cb *group_invite;
+    void *group_invite_userdata;
 
     m_file_recv_cb *file_sendrequest;
     m_file_recv_control_cb *file_filecontrol;
@@ -608,6 +613,12 @@ void m_callback_core_connection(Messenger *m, m_self_connection_status_cb *funct
  *  Function(Messenger *m, uint32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
  */
 void m_callback_conference_invite(Messenger *m, m_conference_invite_cb *function);
+
+/* Set the callback for group invites.
+ *
+ *  Function(Messenger *m, uint32_t friendnumber, const uint8_t *data, size_t length, void *userdata)
+ */
+void m_callback_group_invite(Messenger *m, m_group_invite_cb *function, void *userdata);
 
 /* Send a conference invite packet.
  *

@@ -1011,6 +1011,13 @@ void m_callback_conference_invite(Messenger *m, m_conference_invite_cb *function
 }
 
 
+void m_callback_group_invite(Messenger *m, m_group_invite_cb *function, void *userdata)
+{
+    m->group_invite = function;
+    m->group_invite_userdata = userdata;
+}
+
+
 /* Send a conference invite packet.
  *
  *  return 1 on success
@@ -1048,6 +1055,8 @@ void callback_file_sendrequest(Messenger *m, m_file_recv_cb *function)
 {
     m->file_sendrequest = function;
 }
+
+
 
 /* Set the callback for file control requests.
  *
@@ -2519,6 +2528,25 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
                 (*m->msi_packet)(m, i, data, data_length, m->msi_packet_userdata);
             }
 
+            break;
+        }
+
+        case PACKET_ID_INVITE_GROUPCHAT: {
+            if (data_length < 2 + GC_JOIN_DATA_LENGTH) {
+                break;
+            }
+
+            if (m->group_invite && data[1] == GROUP_INVITE && data_length != 2 + GC_JOIN_DATA_LENGTH) {
+                if (check_group_invite(m->group_handler, data + 2, data_length - 1)) {
+                    (*m->group_invite)(m, i, data + 2, GC_JOIN_DATA_LENGTH,
+                                       data + 2 + GC_JOIN_DATA_LENGTH, data_length - 2 - GC_JOIN_DATA_LENGTH,
+                                       m->group_invite_userdata);
+                }
+            } else if (data[1] == GROUP_INVITE_ACCEPTED) {
+                handle_gc_invite_accepted_packet(m->group_handler, i, data + 2, data_length - 2);
+            } else if (data[1] == GROUP_INVITE_CONFIRMATION) {
+                handle_gc_invite_confirmed_packet(m->group_handler, i, data + 2, data_length - 2);
+            }
             break;
         }
 
