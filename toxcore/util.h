@@ -31,23 +31,66 @@
 #include <stdint.h>
 
 #include "logger.h"
+#include "crypto_core.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+bool is_power_of_2(uint64_t x);
+
+/* Functions for groupchat extended keys */
+const uint8_t *get_enc_key(const uint8_t *key);
+const uint8_t *get_sig_pk(const uint8_t *key);
+void set_sig_pk(uint8_t *key, const uint8_t *sig_pk);
+const uint8_t *get_sig_sk(const uint8_t *key);
+void set_sig_sk(uint8_t *key, const uint8_t *sig_sk);
+const uint8_t *get_chat_id(const uint8_t *key);
+
+
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
+
+int id_cmp(const uint8_t *first_id, const uint8_t *second_id);
+
+/* compares two group chat_id's */
+bool chat_id_equal(const uint8_t *dest, const uint8_t *src);
+
 uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
+
+// For printing purposes
+char *id_toa(const uint8_t *id);
 
 void host_to_net(uint8_t *num, uint16_t numbytes);
 void net_to_host(uint8_t *num, uint16_t numbytes);
+
+/* frees all pointers in a uint8_t pointer array, as well as the array itself. */
+void free_uint8_t_pointer_array(uint8_t **ary, size_t n_items);
+
+/* Converts 8 bytes to uint64_t */
+void get_be64(uint64_t *dest, const uint8_t *bytes);
+
+/* Converts 4 bytes to uint32_t */
+void get_be32(uint32_t *dest, const uint8_t *bytes);
+
+/* Converts 2 bytes to uint16_t */
+void get_be16(uint16_t *dest, const uint8_t *bytes);
+
+/* Convert uint64_t to byte string of size 8 */
+void put_be64(uint8_t *dest, uint64_t value);
+
+/* Convert uint32_t to byte string of size 4 */
+void put_be32(uint8_t *dest, uint32_t value);
+
+/* Convert uint16_t to byte string of size 2 */
+void put_be16(uint8_t *dest, uint16_t value);
 
 /* Returns -1 if failed or 0 if success */
 int create_recursive_mutex(pthread_mutex_t *mutex);
 
 int32_t max_s32(int32_t a, int32_t b);
 int32_t min_s32(int32_t a, int32_t b);
+uint16_t min_u16(uint16_t a, uint16_t b);
 uint32_t min_u32(uint32_t a, uint32_t b);
 uint64_t min_u64(uint64_t a, uint64_t b);
 
