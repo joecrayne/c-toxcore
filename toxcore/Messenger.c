@@ -2104,6 +2104,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
         return nullptr;
     }
 
+#ifndef VANILLA_NACL
     m->group_announce = new_gca_list();
 
     if (m->group_announce == nullptr) {
@@ -2127,6 +2128,8 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
         return nullptr;
     }
 
+#endif /* VANILLA_NACL */
+
     m->onion = new_onion(m->mono_time, m->dht);
     m->onion_a = new_onion_announce(m->mono_time, m->dht, m->group_announce);
     m->onion_c =  new_onion_client(m->mono_time, m->net_crypto, m->group_handler);
@@ -2137,7 +2140,9 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
+#ifndef VANILLA_NACL
         kill_dht_groupchats(m->group_handler);
+#endif /* VANILLA_NACL */
         kill_net_crypto(m->net_crypto);
         kill_dht(m->dht);
         kill_networking(m->net);
@@ -2156,8 +2161,10 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
             kill_onion(m->onion);
             kill_onion_announce(m->onion_a);
             kill_onion_client(m->onion_c);
+#ifndef VANILLA_NACL
             kill_dht_groupchats(m->group_handler);
             kill_gca(m->group_announce);
+#endif /* VANILLA_NACL */
             kill_net_crypto(m->net_crypto);
             kill_dht(m->dht);
             kill_networking(m->net);
@@ -2206,8 +2213,10 @@ void kill_messenger(Messenger *m)
     kill_onion(m->onion);
     kill_onion_announce(m->onion_a);
     kill_onion_client(m->onion_c);
+#ifndef VANILLA_NACL
     kill_dht_groupchats(m->group_handler);
     kill_gca(m->group_announce);
+#endif /* VANILLA_NACL */
     kill_net_crypto(m->net_crypto);
     kill_dht(m->dht);
     kill_networking(m->net);
@@ -3266,6 +3275,7 @@ static State_Load_Status friends_list_load(Messenger *m, const uint8_t *data, ui
     return STATE_LOAD_STATUS_CONTINUE;
 }
 
+#ifndef VANILLA_NACL
 static uint32_t saved_groups_size(const Messenger *m)
 {
     return gc_count_groups(m->group_handler) * sizeof(Saved_Group);
@@ -3315,6 +3325,7 @@ static State_Load_Status groups_load(Messenger *m, const uint8_t *data, uint32_t
 
     return STATE_LOAD_STATUS_CONTINUE;
 }
+#endif /* VANILLA_NACL */
 
 // name state plugin
 static uint32_t name_size(const Messenger *m)
@@ -3475,7 +3486,9 @@ static void m_register_default_plugins(Messenger *m)
     m_register_state_plugin(m, STATE_TYPE_STATUSMESSAGE, status_message_size, load_status_message,
                             save_status_message);
     m_register_state_plugin(m, STATE_TYPE_STATUS, status_size, load_status, save_status);
+#ifndef VANILLA_NACL
     m_register_state_plugin(m, STATE_TYPE_GROUPS, saved_groups_size, groups_load, groups_save);
+#endif
     m_register_state_plugin(m, STATE_TYPE_TCP_RELAY, tcp_relay_size, load_tcp_relays, save_tcp_relays);
     m_register_state_plugin(m, STATE_TYPE_PATH_NODE, path_node_size, load_path_nodes, save_path_nodes);
 }
