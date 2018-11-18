@@ -142,6 +142,12 @@ typedef enum Userstatus {
     USERSTATUS_INVALID
 } Userstatus;
 
+typedef enum {
+    CONTACT_TYPE_FRIEND,
+    CONTACT_TYPE_GC
+}
+CONTACT_TYPE;
+
 #define FILE_ID_LENGTH 32
 
 struct File_Transfers {
@@ -255,6 +261,8 @@ typedef struct Friend {
 
     struct Receipts *receipts_start;
     struct Receipts *receipts_end;
+
+    CONTACT_TYPE type;
 } Friend;
 
 struct Messenger {
@@ -372,16 +380,12 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *real_pk);
 /* Add a chat group as a friend.
  *  return the friend number if success.
  *  return a negative number on error.
- *
- *  TODO
  */
 int32_t m_add_friend_gc(Messenger *m, GC_Chat *chat);
 
 /* Remove a chat group from the roster.
  *  return the friend number associated with the given chat.
  *  return -1 if no such friend.
- *
- *  TODO
  */
 int32_t m_remove_friend_gc(Messenger *m, const GC_Chat *chat);
 
