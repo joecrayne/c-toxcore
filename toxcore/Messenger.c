@@ -1007,6 +1007,22 @@ int send_conference_invite_packet(const Messenger *m, int32_t friendnumber, cons
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_CONFERENCE, data, length, 0);
 }
 
+
+/* Send a group invite packet.
+ *
+ *  return 0 on success
+ *  return -1 on failure
+ */
+int send_group_invite_packet(const Messenger *m, uint32_t friendnumber, const uint8_t *data, size_t length)
+{
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, data, length, 0)) {
+        return 0;
+    }
+
+    return -1;
+}
+
+
 /****************FILE SENDING*****************/
 
 
