@@ -44,7 +44,7 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
 static void m_register_default_plugins(Messenger *m);
 
 // friend_not_valid determines if the friendnumber passed is valid in the Messenger object
-static uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
+uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
 {
     if ((unsigned int)friendnumber < m->numfriends) {
         if (m->friendlist[friendnumber].status != 0) {
