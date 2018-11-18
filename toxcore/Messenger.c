@@ -1089,8 +1089,6 @@ void callback_file_sendrequest(Messenger *m, m_file_recv_cb *function)
     m->file_sendrequest = function;
 }
 
-
-
 /* Set the callback for file control requests.
  *
  *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, unsigned int control_type, void *userdata)
@@ -3268,6 +3266,55 @@ static State_Load_Status friends_list_load(Messenger *m, const uint8_t *data, ui
     return STATE_LOAD_STATUS_CONTINUE;
 }
 
+static uint32_t saved_groups_size(const Messenger *m)
+{
+    return gc_count_groups(m->group_handler) * sizeof(Saved_Group);
+}
+
+static uint8_t *groups_save(const Messenger *m, uint8_t *data)
+{
+    const GC_Session *c = m->group_handler;
+
+    data = state_write_section_header(data, STATE_COOKIE_TYPE, saved_groups_size(m),
+                                      STATE_TYPE_GROUPS);
+
+    for (uint32_t i = 0; i < c->num_chats; ++i) {
+        const GC_Chat *chat = &c->chats[i];
+        if (chat->connection_state <= CS_NONE || chat->connection_state >= CS_INVALID) {
+            continue;
+        }
+
+        Saved_Group temp;
+        pack_group_info(chat, &temp, true);
+
+        memcpy(data, &temp, sizeof(Saved_Group));
+        data += sizeof(Saved_Group);
+    }
+
+    return data;
+}
+
+static State_Load_Status groups_load(Messenger *m, const uint8_t *data, uint32_t length)
+{
+    if (length % sizeof(Saved_Group) != 0) {
+        return STATE_LOAD_STATUS_ERROR; // TODO(endoffile78): error or continue?
+    }
+
+    uint32_t i, num = length / sizeof(Saved_Group);
+
+    for (i = 0; i < num; ++i) {
+        Saved_Group temp;
+        memcpy(&temp, data + i * sizeof(Saved_Group), sizeof(Saved_Group));
+
+        int group_number = gc_group_load(m->group_handler, &temp, -1);
+
+        if (group_number == -1) {
+            LOGGER_WARNING(m->log, "Failed to join group");
+        }
+    }
+
+    return STATE_LOAD_STATUS_CONTINUE;
+}
 
 // name state plugin
 static uint32_t name_size(const Messenger *m)
@@ -3428,6 +3475,7 @@ static void m_register_default_plugins(Messenger *m)
     m_register_state_plugin(m, STATE_TYPE_STATUSMESSAGE, status_message_size, load_status_message,
                             save_status_message);
     m_register_state_plugin(m, STATE_TYPE_STATUS, status_size, load_status, save_status);
+    m_register_state_plugin(m, STATE_TYPE_GROUPS, saved_groups_size, groups_load, groups_save);
     m_register_state_plugin(m, STATE_TYPE_TCP_RELAY, tcp_relay_size, load_tcp_relays, save_tcp_relays);
     m_register_state_plugin(m, STATE_TYPE_PATH_NODE, path_node_size, load_path_nodes, save_path_nodes);
 }
