@@ -2060,8 +2060,18 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
         return nullptr;
     }
 
+    m->group_announce = new_gca_list();
+
+    if (m->group_announce == nullptr) {
+        kill_networking(m->net);
+        kill_net_crypto(m->net_crypto);
+        kill_dht(m->dht);
+        free(m);
+        return nullptr;
+    }
+
     m->onion = new_onion(m->mono_time, m->dht);
-    m->onion_a = new_onion_announce(m->mono_time, m->dht);
+    m->onion_a = new_onion_announce(m->mono_time, m->dht, m->group_announce);
     m->onion_c =  new_onion_client(m->mono_time, m->net_crypto);
     m->fr_c = new_friend_connections(m->mono_time, m->onion_c, options->local_discovery_enabled);
 
@@ -2070,6 +2080,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
+	// XXX: kill_gca ??
         kill_net_crypto(m->net_crypto);
         kill_dht(m->dht);
         kill_networking(m->net);
@@ -2088,6 +2099,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
             kill_onion(m->onion);
             kill_onion_announce(m->onion_a);
             kill_onion_client(m->onion_c);
+            kill_gca(m->group_announce);
             kill_net_crypto(m->net_crypto);
             kill_dht(m->dht);
             kill_networking(m->net);
@@ -2136,6 +2148,7 @@ void kill_messenger(Messenger *m)
     kill_onion(m->onion);
     kill_onion_announce(m->onion_a);
     kill_onion_client(m->onion_c);
+    kill_gca(m->group_announce);
     kill_net_crypto(m->net_crypto);
     kill_dht(m->dht);
     kill_networking(m->net);
