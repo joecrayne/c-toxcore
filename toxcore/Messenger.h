@@ -31,6 +31,8 @@
 #include "net_crypto.h"
 #include "state.h"
 
+typedef struct GC_Chat GC_Chat;
+
 #define MAX_NAME_LENGTH 128
 /* TODO(irungentoo): this must depend on other variable. */
 #define MAX_STATUSMESSAGE_LENGTH 1007
@@ -356,6 +358,22 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
  *  return -8 if increasing the friend list size fails.
  */
 int32_t m_addfriend_norequest(Messenger *m, const uint8_t *real_pk);
+
+/* Add a chat group as a friend.
+ *  return the friend number if success.
+ *  return a negative number on error.
+ *
+ *  TODO
+ */
+int32_t m_add_friend_gc(Messenger *m, GC_Chat *chat);
+
+/* Remove a chat group from the roster.
+ *  return the friend number associated with the given chat.
+ *  return -1 if no such friend.
+ *
+ *  TODO
+ */
+int32_t m_remove_friend_gc(Messenger *m, const GC_Chat *chat);
 
 /*  return the friend number associated to that client id.
  *  return -1 if no such friend.

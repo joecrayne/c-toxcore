@@ -314,6 +314,16 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *real_pk)
     return init_new_friend(m, real_pk, FRIEND_CONFIRMED);
 }
 
+int32_t m_add_friend_gc(Messenger *m, GC_Chat *chat)
+{
+    return -1; // TODO
+}
+
+int32_t m_remove_friend_gc(Messenger *m, const GC_Chat *chat)
+{
+    return -1; // TODO
+}
+
 static int clear_receipts(Messenger *m, int32_t friendnumber)
 {
     if (friend_not_valid(m, friendnumber)) {
@@ -2585,6 +2595,7 @@ uint32_t messenger_run_interval(const Messenger *m)
 
     return crypto_interval;
 }
+
 
 /* The main loop that needs to be run at least 20 times per second. */
 void do_messenger(Messenger *m, void *userdata)
