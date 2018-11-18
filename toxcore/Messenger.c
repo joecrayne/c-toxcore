@@ -334,7 +334,7 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *real_pk)
     return m_add_contact_no_request(m, real_pk);
 }
 
-static void try_pack_gc_data(const Messenger *m, const GC_Chat *chat, Onion_Friend *onion_friend);
+static void try_pack_gc_data(const Messenger *m, const GC_Chat *chat, GroupChatInfo *onion_friend);
 
 int32_t m_add_friend_gc(Messenger *m, GC_Chat *chat)
 {
@@ -348,10 +348,11 @@ int32_t m_add_friend_gc(Messenger *m, GC_Chat *chat)
         Friend *f = &m->friendlist[friend_number];
         f->type = CONTACT_TYPE_GC;
         int onion_friend_number = friendconn_onion_friend_number(m->fr_c, f->friendcon_id);
-        Onion_Friend *onion_friend = &m->onion_c->friends_list[onion_friend_number];
-        memcpy(onion_friend->gc_public_key, get_chat_id(chat->chat_public_key), ENC_PUBLIC_KEY);
-
-        try_pack_gc_data(m, chat, onion_friend);
+        GroupChatInfo *gc = onion_gc_info(m->onion_c, onion_friend_number);
+        if(gc) { // Paranoid check; this should always be true.
+                memcpy(gc->public_key, get_chat_id(chat->chat_public_key), ENC_PUBLIC_KEY);
+                try_pack_gc_data(m, chat, gc);
+        }
     }
 
     return friend_number;
@@ -2702,7 +2703,7 @@ uint32_t messenger_run_interval(const Messenger *m)
     return crypto_interval;
 }
 
-static void try_pack_gc_data(const Messenger *m, const GC_Chat *chat, Onion_Friend *onion_friend)
+static void try_pack_gc_data(const Messenger *m, const GC_Chat *chat, GroupChatInfo *gc)
 {
     GC_Public_Announce announce;
     int tcp_num = tcp_copy_connected_relays(chat->tcp_conn, announce.base_announce.tcp_relays,
@@ -2728,12 +2729,12 @@ static void try_pack_gc_data(const Messenger *m, const GC_Chat *chat, Onion_Frie
         memcpy(announce.base_announce.peer_public_key, chat->self_public_key, ENC_PUBLIC_KEY);
         memcpy(announce.chat_public_key, get_chat_id(chat->chat_public_key), ENC_PUBLIC_KEY);
 
-        int length = pack_public_announce(onion_friend->gc_data, GC_MAX_DATA_LENGTH, &announce);
+        int length = pack_public_announce(gc->data, GC_MAX_DATA_LENGTH, &announce);
         if (length == -1) {
             return;
         }
 
-        onion_friend->gc_data_length = (short)length;
+        gc->data_length = (short)length;
         if (tcp_num > 0) {
             memcpy((void*)&chat->announced_node, &announce.base_announce.tcp_relays[0], sizeof(Node_format));
         }
@@ -2741,26 +2742,28 @@ static void try_pack_gc_data(const Messenger *m, const GC_Chat *chat, Onion_Frie
         add_gc_announce(m->mono_time, m->group_announce, &announce);
     } else {
         fprintf(stderr, "pack error\n");
-        onion_friend->gc_data_length = -1;  // new gc - no connected relays yet and no ip/port
+        gc->data_length = -1;  // new gc - no connected relays yet and no ip/port
     }
 }
 
 static void update_gc_friends_data(const Messenger *m)
 {
     int i;
-    for (i = 0; i < m->onion_c->num_friends; i++) {
-        Onion_Friend *onion_friend = &m->onion_c->friends_list[i];
-        if (!onion_friend->gc_data_length) {
+    for (i = 0; ; i++) {
+        GroupChatInfo *gc = onion_gc_info(m->onion_c,i);
+        if(!gc) break;
+
+        if (!gc->data_length) {
             continue;
         }
 
-        GC_Chat *chat = gc_get_group_by_public_key(m->group_handler, onion_friend->gc_public_key);
+        GC_Chat *chat = gc_get_group_by_public_key(m->group_handler, gc->public_key);
         if (!chat) {
             continue;
         }
 
-        if (onion_friend->gc_data_length == -1 || chat->should_update_self_announces) {
-            try_pack_gc_data(m, chat, onion_friend);
+        if (gc->data_length == -1 || chat->should_update_self_announces) {
+            try_pack_gc_data(m, chat, gc);
 
             chat->should_update_self_announces = false;
         }
