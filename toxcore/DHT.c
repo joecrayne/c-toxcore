@@ -599,7 +599,12 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
         const int ipp_size = unpack_ip_port(&nodes[num].ip_port, data + len_processed, length - len_processed, tcp_enabled);
 
         if (ipp_size == -1) {
-            return -1;
+            if (data[len_processed] == TOX_AF_UNSPEC) {
+                len_processed ++;
+                break;
+            } else {
+                return -1;
+            }
         }
 
         len_processed += ipp_size;

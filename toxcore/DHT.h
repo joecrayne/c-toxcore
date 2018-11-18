@@ -189,6 +189,10 @@ int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool 
 
 /* Pack number of nodes into data of maxlength length.
  *
+ * This function does not encode a length or count.  If you intend to write
+ * more data beyond the end of this list, you should write a terminator byte
+ * TOX_AF_UNSPEC before doing so.
+ *
  * return length of packed nodes on success.
  * return -1 on failure.
  */
@@ -197,6 +201,11 @@ int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_
 /* Unpack data of length into nodes of size max_num_nodes.
  * Put the length of the data processed in processed_data_len.
  * tcp_enabled sets if TCP nodes are expected (true) or not (false).
+ *
+ * The special address family TOX_AF_UNSPEC is not copied into the destination
+ * buffer.  Instead, it is treated as a list-terminator and the remainder of
+ * the input beyond that byte is ignored.  The amount of unconsumed input can
+ * be determined by subtracting processed_data_len from length.
  *
  * return number of unpacked nodes on success.
  * return -1 on failure.

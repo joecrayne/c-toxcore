@@ -139,7 +139,7 @@ typedef enum Net_Packet_Type {
 #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
 /* Redefinitions of variables for safe transfer over wire. */
-#define TOX_AF_UNSPEC 0
+#define TOX_AF_UNSPEC 0 // Note: This value is used as a list-terminator for unpack_nodes.
 #define TOX_AF_INET 2
 #define TOX_AF_INET6 10
 #define TOX_TCP_INET 130
