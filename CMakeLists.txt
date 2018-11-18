@@ -219,7 +219,10 @@ set(toxcore_SOURCES ${toxcore_SOURCES}
 # LAYER 6: DHT based group chats
 # ----------------------
 set(toxcore_SOURCES ${toxcore_SOURCES}
-  toxcore/group_announce.c)
+  toxcore/group_announce.c
+  toxcore/group_chats.c
+  toxcore/group_connection.c
+  toxcore/group_moderation.c)
 
 # LAYER 7: Tox messenger
 # ----------------------
