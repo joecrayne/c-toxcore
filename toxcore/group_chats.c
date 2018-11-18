@@ -6113,9 +6113,7 @@ static int send_gc_invite_confirmed_packet(Messenger *m, GC_Chat *chat, uint32_t
 static bool copy_ip_port_to_gconn(Messenger *m, int friend_number, GC_Connection *gconn)
 {
     Friend *f = &m->friendlist[friend_number];
-    int friend_connection_id = f->friendcon_id;
-    Friend_Conn *connection = &m->fr_c->conns[friend_connection_id];
-    IP_Port *friend_ip_port = &connection->dht_ip_port;
+    const IP_Port *friend_ip_port = friendconn_dht_ip_port( m->fr_c, f->friendcon_id );
     if (!ipport_isset(friend_ip_port)) {
         return false;
     }

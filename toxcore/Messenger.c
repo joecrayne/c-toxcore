@@ -347,10 +347,7 @@ int32_t m_add_friend_gc(Messenger *m, GC_Chat *chat)
     if (friend_number >= 0) {
         Friend *f = &m->friendlist[friend_number];
         f->type = CONTACT_TYPE_GC;
-
-        int friend_connection_id = f->friendcon_id;
-        Friend_Conn *connection = &m->fr_c->conns[friend_connection_id];
-        int onion_friend_number = connection->onion_friendnum;
+        int onion_friend_number = friendconn_onion_friend_number(m->fr_c, f->friendcon_id);
         Onion_Friend *onion_friend = &m->onion_c->friends_list[onion_friend_number];
         memcpy(onion_friend->gc_public_key, get_chat_id(chat->chat_public_key), ENC_PUBLIC_KEY);
 
