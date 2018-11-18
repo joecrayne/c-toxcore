@@ -28,7 +28,7 @@
 #include "net_crypto.h"
 #include "onion_announce.h"
 #include "ping_array.h"
-#include "group_announce.h"
+#include "group_chats.h"
 
 #define MAX_ONION_CLIENTS 8
 #define MAX_ONION_CLIENTS_ANNOUNCE 12 // Number of nodes to announce ourselves to.
@@ -57,15 +57,12 @@
 
 #define GC_MAX_DATA_LENGTH GC_PUBLIC_ANNOUNCE_MAX_SIZE
 
-/* If no announce response packets are received within this interval tox will
- * be considered offline. We give time for a node to be pinged often enough
- * that it times out, which leads to the network being thoroughly tested as it
- * is replaced.
+/* If no packets are received within that interval tox will
+ * be considered offline.
  */
 #define ONION_OFFLINE_TIMEOUT (ONION_NODE_PING_INTERVAL * (ONION_NODE_MAX_PINGS+2))
 
 /* Onion data packet ids. */
-#define ONION_DATA_FRIEND_REQ CRYPTO_PACKET_FRIEND_REQ
 #define ONION_DATA_DHTPK CRYPTO_PACKET_DHTPK
 
 typedef struct Onion_Client Onion_Client;
@@ -191,7 +188,7 @@ void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_ha
 
 void do_onion_client(Onion_Client *onion_c);
 
-Onion_Client *new_onion_client(Mono_Time *mono_time, Net_Crypto *c);
+Onion_Client *new_onion_client(Mono_Time *mono_time, Net_Crypto *c, GC_Session *gc_session);
 
 void kill_onion_client(Onion_Client *onion_c);
 

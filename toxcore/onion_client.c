@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "LAN_discovery.h"
+#include "group_chats.h"
 #include "mono_time.h"
 #include "util.h"
 
@@ -117,6 +118,7 @@ struct Onion_Client {
 
     DHT     *dht;
     Net_Crypto *c;
+    GC_Session *gc_session;
     Networking_Core *net;
     Onion_Friend    *friends_list;
     uint16_t       num_friends;
@@ -600,7 +602,7 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
         ping_id = zero_ping_id;
     }
 
-    uint8_t request[ONION_ANNOUNCE_REQUEST_MIN_SIZE];
+    uint8_t request[ONION_ANNOUNCE_REQUEST_MAX_SIZE];
     int len;
 
     if (num == 0) {
@@ -610,9 +612,18 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
     } else {
         Onion_Friend *onion_friend = &onion_c->friends_list[num - 1];
 
-        len = create_announce_request(request, sizeof(request), dest_pubkey, onion_friend->temp_public_key,
-                                      onion_friend->temp_secret_key, ping_id, onion_friend->real_public_key,
-                                      zero_ping_id, sendback);
+        if (onion_friend->gc.data_length == 0) { // contact is a friend
+            len = create_announce_request(request, sizeof(request), dest_pubkey, onion_friend->temp_public_key,
+                                          onion_friend->temp_secret_key, ping_id, onion_friend->real_public_key,
+                                          zero_ping_id, sendback);
+        } else if (onion_friend->gc.data_length > 0)  { // contact is a gc
+            len = create_gc_announce_request(request, sizeof(request), dest_pubkey, onion_friend->temp_public_key,
+                                             onion_friend->temp_secret_key, ping_id, onion_friend->real_public_key,
+                                             zero_ping_id, sendback, onion_friend->gc.data,
+                                             onion_friend->gc.data_length);
+        } else {
+            return 0;
+        }
     }
 
     if (len == -1) {
@@ -912,6 +923,12 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
     if (len_nodes < length - ONION_ANNOUNCE_RESPONSE_MIN_SIZE) {
         GC_Announce announces[MAX_SENT_ANNOUNCES];
 
+        GC_Chat *chat = gc_get_group_by_public_key(onion_c->gc_session,
+                                                   onion_c->friends_list[num - 1].gc.public_key);
+        if (!chat) {
+            return 1;
+        }
+
         int offset = 1 + ONION_PING_ID_SIZE + len_nodes;
         int gc_announces_count = unpack_announces_list(plain + offset, plain_size - offset,
                                                        announces, MAX_SENT_ANNOUNCES, nullptr);
@@ -919,6 +936,10 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
             return 1;
         }
 
+        int added_peers = add_peers_from_announces(onion_c->gc_session, chat, announces, gc_announces_count);
+        if (added_peers < 0) {
+            return 1;
+        }
     }
 
     //TODO: LAN vs non LAN ips?, if we are connected only to LAN, are we offline?
@@ -1884,9 +1905,9 @@ void do_onion_client(Onion_Client *onion_c)
     onion_c->last_run = mono_time_get(onion_c->mono_time);
 }
 
-Onion_Client *new_onion_client(Mono_Time *mono_time, Net_Crypto *c)
+Onion_Client *new_onion_client(Mono_Time *mono_time, Net_Crypto *c, GC_Session *gc_session)
 {
-    if (!c) {
+    if (!c || !gc_session) {
         return nullptr;
     }
 
@@ -1907,6 +1928,7 @@ Onion_Client *new_onion_client(Mono_Time *mono_time, Net_Crypto *c)
     onion_c->dht = nc_get_dht(c);
     onion_c->net = dht_get_net(onion_c->dht);
     onion_c->c = c;
+    onion_c->gc_session = gc_session;
     new_symmetric_key(onion_c->secret_symmetric_key);
     crypto_new_keypair(onion_c->temp_public_key, onion_c->temp_secret_key);
     networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_announce_response, onion_c);

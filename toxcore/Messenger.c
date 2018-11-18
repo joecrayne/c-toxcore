@@ -43,7 +43,11 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
                                 uint32_t length, uint8_t congestion_control);
 static void m_register_default_plugins(Messenger *m);
 
-// friend_not_valid determines if the friendnumber passed is valid in the Messenger object
+/* determines if the friendnumber passed is valid in the Messenger object.
+ *
+ * Returns 1 if friendnumber does not designate a valid friend.
+ * Returns 0 otherwise.
+ */
 uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
 {
     if ((unsigned int)friendnumber < m->numfriends) {
@@ -2070,9 +2074,22 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
         return nullptr;
     }
 
+    m->group_handler = new_dht_groupchats(m);
+
+    if (m->group_handler == nullptr) {
+        kill_gca(m->group_announce);
+        kill_networking(m->net);
+        kill_net_crypto(m->net_crypto);
+        kill_dht(m->dht);
+        friendreq_kill(m->fr);
+        logger_kill(m->log);
+        free(m);
+        return nullptr;
+    }
+
     m->onion = new_onion(m->mono_time, m->dht);
     m->onion_a = new_onion_announce(m->mono_time, m->dht, m->group_announce);
-    m->onion_c =  new_onion_client(m->mono_time, m->net_crypto);
+    m->onion_c =  new_onion_client(m->mono_time, m->net_crypto, m->group_handler);
     m->fr_c = new_friend_connections(m->mono_time, m->onion_c, options->local_discovery_enabled);
 
     if (!(m->onion && m->onion_a && m->onion_c)) {
@@ -2080,7 +2097,8 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
-	// XXX: kill_gca ??
+        kill_dht_groupchats(m->group_handler);
+        // XXX: kill_gca ??
         kill_net_crypto(m->net_crypto);
         kill_dht(m->dht);
         kill_networking(m->net);
@@ -2099,6 +2117,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
             kill_onion(m->onion);
             kill_onion_announce(m->onion_a);
             kill_onion_client(m->onion_c);
+            kill_dht_groupchats(m->group_handler);
             kill_gca(m->group_announce);
             kill_net_crypto(m->net_crypto);
             kill_dht(m->dht);
@@ -2148,6 +2167,7 @@ void kill_messenger(Messenger *m)
     kill_onion(m->onion);
     kill_onion_announce(m->onion_a);
     kill_onion_client(m->onion_c);
+    kill_dht_groupchats(m->group_handler);
     kill_gca(m->group_announce);
     kill_net_crypto(m->net_crypto);
     kill_dht(m->dht);
@@ -2646,6 +2666,7 @@ void do_messenger(Messenger *m, void *userdata)
     do_net_crypto(m->net_crypto, userdata);
     do_onion_client(m->onion_c);
     do_friend_connections(m->fr_c, userdata);
+    do_gca(m->mono_time, m->group_announce);
     do_friends(m, userdata);
     connection_status_callback(m, userdata);
 
