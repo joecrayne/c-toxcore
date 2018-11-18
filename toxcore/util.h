@@ -51,6 +51,9 @@ int32_t min_s32(int32_t a, int32_t b);
 uint32_t min_u32(uint32_t a, uint32_t b);
 uint64_t min_u64(uint64_t a, uint64_t b);
 
+#define IDSTRING_LEN (CRYPTO_PUBLIC_KEY_SIZE * 2 + 1)
+char *id_to_string(const uint8_t *pk, char *id_str, size_t length);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
