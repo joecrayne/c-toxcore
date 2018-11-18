@@ -387,7 +387,7 @@ static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_pa
     }
 
     if (path_timed_out(onion_c->mono_time, onion_paths, pathnum)) {
-        Node_format nodes[ONION_PATH_LENGTH];
+        Node_format nodes[ONION_PATH_LENGTH] = {{{0}}};
 
         if (random_nodes_path_onion(onion_c, nodes, ONION_PATH_LENGTH) != ONION_PATH_LENGTH) {
             return -1;
@@ -608,9 +608,11 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
                                       nc_get_self_secret_key(onion_c->c), ping_id, nc_get_self_public_key(onion_c->c),
                                       onion_c->temp_public_key, sendback);
     } else {
-        len = create_announce_request(request, sizeof(request), dest_pubkey, onion_c->friends_list[num - 1].temp_public_key,
-                                      onion_c->friends_list[num - 1].temp_secret_key, ping_id,
-                                      onion_c->friends_list[num - 1].real_public_key, zero_ping_id, sendback);
+        Onion_Friend *onion_friend = &onion_c->friends_list[num - 1];
+
+        len = create_announce_request(request, sizeof(request), dest_pubkey, onion_friend->temp_public_key,
+                                      onion_friend->temp_secret_key, ping_id, onion_friend->real_public_key,
+                                      zero_ping_id, sendback);
     }
 
     if (len == -1) {
@@ -854,18 +856,16 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
         return 1;
     }
 
-    uint16_t len_nodes = length - ONION_ANNOUNCE_RESPONSE_MIN_SIZE;
-
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
     IP_Port ip_port;
     uint32_t path_num;
     uint32_t num = check_sendback(onion_c, packet + 1, public_key, &ip_port, &path_num);
-
     if (num > onion_c->num_friends) {
         return 1;
     }
 
-    VLA(uint8_t, plain, 1 + ONION_PING_ID_SIZE + len_nodes);
+    uint8_t plain[1 + ONION_PING_ID_SIZE + ONION_ANNOUNCE_RESPONSE_MAX_SIZE - ONION_ANNOUNCE_RESPONSE_MIN_SIZE];
+    int plain_size = 1 + ONION_PING_ID_SIZE + length - ONION_ANNOUNCE_RESPONSE_MIN_SIZE;
     int len;
 
     if (num == 0) {
@@ -884,7 +884,7 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
                            length - (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE), plain);
     }
 
-    if ((uint32_t)len != SIZEOF_VLA(plain)) {
+    if ((uint32_t)len != plain_size) {
         return 1;
     }
 
@@ -894,20 +894,34 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
         return 1;
     }
 
-    if (len_nodes != 0) {
-        Node_format nodes[MAX_SENT_NODES];
-        int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, nullptr, plain + 1 + ONION_PING_ID_SIZE, len_nodes, 0);
+    uint16_t len_nodes = 0;
+    Node_format nodes[MAX_SENT_NODES];
+    int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, &len_nodes, plain + 1 + ONION_PING_ID_SIZE,
+                                 plain_size - 1 - ONION_PING_ID_SIZE, 0);
 
-        if (num_nodes <= 0) {
-            return 1;
-        }
-
-        if (client_ping_nodes(onion_c, num, nodes, num_nodes, source) == -1) {
-            return 1;
-        }
+    if (num_nodes < 0) {
+        return 1;
     }
 
-    // TODO(irungentoo): LAN vs non LAN ips?, if we are connected only to LAN, are we offline?
+    if (client_ping_nodes(onion_c, num, nodes, num_nodes, source) == -1) {
+        return 1;
+    }
+
+    // If we didn't consume the entire packet, then it must be a groupchat
+    // announce response.
+    if (len_nodes < length - ONION_ANNOUNCE_RESPONSE_MIN_SIZE) {
+        GC_Announce announces[MAX_SENT_ANNOUNCES];
+
+        int offset = 1 + ONION_PING_ID_SIZE + len_nodes;
+        int gc_announces_count = unpack_announces_list(plain + offset, plain_size - offset,
+                                                       announces, MAX_SENT_ANNOUNCES, nullptr);
+        if (gc_announces_count == -1) {
+            return 1;
+        }
+
+    }
+
+    //TODO: LAN vs non LAN ips?, if we are connected only to LAN, are we offline?
     onion_c->last_packet_recv = mono_time_get(onion_c->mono_time);
     return 0;
 }
@@ -1872,7 +1886,7 @@ void do_onion_client(Onion_Client *onion_c)
 
 Onion_Client *new_onion_client(Mono_Time *mono_time, Net_Crypto *c)
 {
-    if (c == nullptr) {
+    if (!c) {
         return nullptr;
     }
 
