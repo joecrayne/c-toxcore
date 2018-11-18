@@ -33,18 +33,11 @@
 #include <string.h>
 #include <time.h>
 
-#include "group.h"
-#include "group_chats.h"
-#include "group_moderation.h"
 #include "logger.h"
 #include "mono_time.h"
 #include "network.h"
 #include "state.h"
 #include "util.h"
-#include "group_chats.h"
-#include "group_moderation.h"
-#include "onion_client.h"
-#include "DHT.h"
 
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length, uint8_t congestion_control);
