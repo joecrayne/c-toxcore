@@ -28,13 +28,11 @@
 #include "TCP_connection.h"
 
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "mono_time.h"
 #include "util.h"
-#include "TCP_client.h"
 
 
 struct TCP_Connections {
